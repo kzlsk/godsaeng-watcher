@@ -9,3 +9,8 @@ export interface FocusSession {
   status: FocusSessionStatus;
   deadlineLabel: string | null;
 }
+
+export interface WeeklyFocusSummary {
+  totalMinutes: number;
+  weekStart: string;
+}

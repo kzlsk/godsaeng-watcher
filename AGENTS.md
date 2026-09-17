@@ -37,15 +37,14 @@ Next.js (App Router) / TypeScript / Tailwind CSS / TanStack Query / Supabase
 ## 브랜치 라이프사이클
 
 - 티켓 시작 시 `ticket/{id}-{요약}` 브랜치를 에이전트가 직접 생성한다
-- 작업 완료 후 로컬에서 통합 게이트(타입체크+린트+테스트)를 직접 실행하고,
-  통과한 경우에만 `integration` 브랜치로 병합한다
-- 게이트를 통과하지 못하면 병합하지 않고 실패 로그를 docs/agent-runs/{ticket-id}.md에
-  남긴 뒤 스스로 수정을 시도한다 (최대 2회 재시도, 이후에도 실패하면 사람에게 보고)
-- `integration` 브랜치 병합이 끝나고 게이트까지 통과했다면 해당 `ticket/*` 브랜치는
-  에이전트가 직접 삭제한다
-- 단, `integration` → `main` 병합은 에이전트가 자동으로 하지 않는다. 사람이 diff를
-  직접 확인한 뒤 병합한다 (여러 티켓이 겹칠 때의 인터페이스 불일치는 자동 게이트로
-  못 걸러지는 경우가 있기 때문)
+- 작업 완료 후 로컬에서 통합 게이트(타입체크+린트+테스트)를 직접 실행한다
+- 게이트를 통과하지 못하면 실패 로그를 docs/agent-runs/{ticket-id}.md에 남긴 뒤
+  스스로 수정을 시도한다 (최대 2회 재시도, 이후에도 실패하면 사람에게 보고)
+- 게이트를 통과하면 커밋하지 않고 변경사항을 그대로 둔 채 멈춘다.
+  커밋, `integration` 병합, 원격 push, `ticket/*` 브랜치 삭제, `main` 병합은
+  전부 사람이 직접 한다 (자동으로 진행하지 않는다)
+- 이유: "병합/삭제까지 했다"는 보고와 실제 원격 상태가 어긋난 적이 있었고,
+  커밋 시점과 메시지도 사람이 diff를 보면서 직접 정리하는 게 안전하기 때문
 
 ## Supabase 관련
 
@@ -74,3 +73,13 @@ Next.js (App Router) / TypeScript / Tailwind CSS / TanStack Query / Supabase
 
 - 새 로직(스트릭 계산, 프롬프트 조립 등)에는 단위 테스트를 추가한다
 - API 라우트 변경 시 통합 테스트를 추가한다
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
