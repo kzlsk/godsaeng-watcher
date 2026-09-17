@@ -74,7 +74,3 @@ Next.js (App Router) / TypeScript / Tailwind CSS / TanStack Query / Supabase
 
 - 새 로직(스트릭 계산, 프롬프트 조립 등)에는 단위 테스트를 추가한다
 - API 라우트 변경 시 통합 테스트를 추가한다
-
-## 커밋 컨벤션
-
-- 형식: `{ticket-id}: {요약}` (예: `001: supabase 초기 스키마 및 RLS 추가`)
