@@ -2,6 +2,7 @@ import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/Badge";
 import { Button } from "@/shared/ui/Button";
 import type { Mission } from "@/entities/mission/model/types";
+import { formatMissionDeadline } from "@/entities/mission/ui/formatMissionDeadline";
 
 interface MissionItemProps {
   mission: Mission;
@@ -11,6 +12,7 @@ interface MissionItemProps {
 
 export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProps) {
   const { topic, todo, deadline, isImportant, isCompleted, actualFocusMinutes } = mission;
+  const deadlineText = formatMissionDeadline(deadline);
 
   return (
     <div
@@ -41,7 +43,9 @@ export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProp
           {todo}
         </span>
         <span className="truncate text-[12px] font-semibold text-ink-soft">
-          {topic} · {deadline} 마감{actualFocusMinutes ? ` · ${actualFocusMinutes}분` : ""}
+          {topic}
+          {deadlineText ? ` · ${deadlineText}` : ""}
+          {actualFocusMinutes ? ` · ${actualFocusMinutes}분` : ""}
         </span>
       </div>
 
