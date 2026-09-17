@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
-import { toMission, type MissionRow } from "@/entities/mission/model/mapMissionRow";
+import {
+  toMission,
+  type MissionRow,
+} from "@/entities/mission/model/mapMissionRow";
 import type { CreateMissionInput } from "@/entities/mission/model/types";
 
-const MISSION_SELECT = "id, category, title, deadline, urgent, done, focus_sessions(duration_min)";
+const MISSION_SELECT =
+  "id, category, title, deadline, urgent, done, focus_sessions(duration_min)";
 
 export async function GET() {
   const supabase = await createClient();
@@ -21,11 +25,21 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = (await request.json()) as CreateMissionInput;
-  if (!body.topic || !body.todo || !body.deadline) {
-    return NextResponse.json({ error: "topic, todo, deadline은 필수입니다." }, { status: 400 });
+  if (!body.topic || !body.todo) {
+    return NextResponse.json(
+      { error: "topic, todo는 필수입니다." },
+      { status: 400 },
+    );
   }
 
   const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  console.log("SERVER SEES USER:", user, userError);
+
   const { data, error } = await supabase
     .from("missions")
     .insert({

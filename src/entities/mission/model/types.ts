@@ -11,7 +11,7 @@ export interface Mission {
 export interface CreateMissionInput {
   topic: string;
   todo: string;
-  deadline: string;
+  deadline?: string;
   isImportant: boolean;
 }
 

@@ -29,8 +29,8 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!topic || !todo || !deadline) return;
-    await addMission.mutateAsync({ topic, todo, deadline, isImportant });
+    if (!topic || !todo) return;
+    await addMission.mutateAsync({ topic, todo, deadline: deadline || undefined, isImportant });
     resetAndClose();
   }
 
@@ -76,7 +76,6 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
               placeholder="13:00"
-              required
             />
             <span className="text-[11.5px] font-semibold text-ink-soft">
               실제 집중 시간은 완료 시 자동으로 기록됩니다.

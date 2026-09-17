@@ -99,7 +99,7 @@ export function addMission(input: CreateMissionInput): Mission {
     id: crypto.randomUUID(),
     topic: input.topic,
     todo: input.todo,
-    deadline: input.deadline,
+    deadline: input.deadline ?? "",
     isImportant: input.isImportant,
     isCompleted: false,
     actualFocusMinutes: null,
