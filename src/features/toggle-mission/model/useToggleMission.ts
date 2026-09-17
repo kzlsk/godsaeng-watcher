@@ -5,10 +5,11 @@ import { missionsQueryKey } from "@/entities/mission/model/useMissions";
 import { dailyStatsQueryKey } from "@/entities/checkin/model/useDailyStats";
 
 async function toggleMission(input: { id: string; isCompleted: boolean }) {
-  const response = await fetch("/api/missions", {
+  const { id, isCompleted } = input;
+  const response = await fetch(`/api/missions/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ isCompleted }),
   });
   if (!response.ok) throw new Error("미션 상태 변경에 실패했습니다.");
   return response.json();
