@@ -1,13 +1,3 @@
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
-
 # 갓생 감시자 — AGENTS.md
 
 ## 프로젝트 개요
@@ -63,6 +53,15 @@ Next.js (App Router) / TypeScript / Tailwind CSS / TanStack Query / Supabase
   (여러 워크트리에서 동시에 원격 dev 프로젝트에 마이그레이션을 적용하지 않는다)
 - 마이그레이션 파일은 supabase/migrations/ 아래에 순번을 붙여 추가한다
 - 모든 테이블에는 RLS를 적용하고 auth.uid() = user_id 정책을 기본으로 한다
+
+## 환경변수 (.env)
+
+- `.env.local`은 gitignore 대상이라 새 워크트리를 파도 자동으로 안 생긴다.
+  워크트리를 새로 만들 때마다 기존 `.env.local`을 그 폴더에 수동으로 복사해야 한다
+  (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`)
+- 카카오/구글 OAuth 키는 앱 .env가 아니라 Supabase 대시보드
+  (Authentication → Providers)에 등록한다
 
 ## AI 하네스 관련 (오늘의 쓴소리)
 
