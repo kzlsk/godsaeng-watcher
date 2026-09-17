@@ -8,8 +8,7 @@ export const missionsQueryKey = ["missions", "today"] as const;
 async function fetchMissions(): Promise<Mission[]> {
   const response = await fetch("/api/missions");
   if (!response.ok) throw new Error("미션을 불러오지 못했습니다.");
-  const data = await response.json();
-  return data.missions as Mission[];
+  return (await response.json()) as Mission[];
 }
 
 export function useMissions() {

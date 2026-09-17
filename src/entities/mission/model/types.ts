@@ -14,3 +14,11 @@ export interface CreateMissionInput {
   deadline: string;
   isImportant: boolean;
 }
+
+export interface UpdateMissionInput {
+  topic?: string;
+  todo?: string;
+  deadline?: string;
+  isImportant?: boolean;
+  isCompleted?: boolean;
+}
