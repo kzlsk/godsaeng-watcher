@@ -53,7 +53,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { missionId?: string; action: "start" | "pause" | "resume" };
+  const body = (await request.json()) as { missionId?: string; action: "start" | "pause" | "resume" | "stop" };
   const supabase = await createClient();
 
   if (body.action === "start" || body.action === "resume") {
@@ -70,6 +70,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
   } else {
+    // pause/stop 둘 다 열린 세그먼트를 마감하고 새 세그먼트는 만들지 않는다.
+    // "일시정지"와 "중지"의 차이는 재개 의도 여부일 뿐이라 클라이언트에서만 구분한다.
     const { error: closeError } = await closeOpenSession(supabase);
     if (closeError) {
       return NextResponse.json({ error: closeError.message }, { status: 500 });

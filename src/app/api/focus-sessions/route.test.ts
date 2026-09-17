@@ -128,6 +128,33 @@ describe("POST /api/focus-sessions", () => {
     });
   });
 
+  it("action=stop이면 pause와 동일하게 열린 세그먼트를 ended_at/duration_min과 함께 닫는다", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-17T09:40:00.000Z"));
+
+    const calls = mockSupabaseQueue([
+      { data: { id: "open-1", started_at: "2026-09-17T09:00:00.000Z" }, error: null }, // 열린 세그먼트
+      { data: null, error: null }, // update
+      { data: [], error: null }, // fetchTodaySession
+    ]);
+
+    const response = await POST(
+      new Request("http://localhost/api/focus-sessions", {
+        method: "POST",
+        body: JSON.stringify({ action: "stop" }),
+      }),
+    );
+
+    expect(response.ok).toBe(true);
+    const insertCall = calls.find((call) => call.name === "insert");
+    expect(insertCall).toBeUndefined();
+    const updateCall = calls.find((call) => call.name === "update");
+    expect(updateCall?.args[0]).toMatchObject({
+      ended_at: "2026-09-17T09:40:00.000Z",
+      duration_min: 40,
+    });
+  });
+
   it("action=pause인데 열린 세그먼트가 없으면 update 없이 그대로 반환한다", async () => {
     const calls = mockSupabaseQueue([
       { data: null, error: null }, // 열린 세그먼트 없음

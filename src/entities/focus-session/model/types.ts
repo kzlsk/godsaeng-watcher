@@ -1,4 +1,4 @@
-export type FocusSessionStatus = "idle" | "running" | "paused";
+export type FocusSessionStatus = "idle" | "running" | "paused" | "stopped";
 
 export interface FocusSession {
   id: string | null;
