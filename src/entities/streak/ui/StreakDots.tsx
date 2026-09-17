@@ -10,10 +10,10 @@ export function StreakDots({ days }: { days: boolean[] }) {
             key={index}
             className={cn(
               "h-5 flex-1",
-              isToday
-                ? "border-2 border-dashed border-green-deep"
-                : completed
-                  ? "bg-green-deep"
+              completed
+                ? "bg-green-deep"
+                : isToday
+                  ? "border-2 border-dashed border-green-deep"
                   : "bg-border-soft-2",
             )}
           />

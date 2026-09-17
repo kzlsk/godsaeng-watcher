@@ -9,7 +9,6 @@ import { MissionItem } from "@/entities/mission/ui/MissionItem";
 import { useDailyStats } from "@/entities/checkin/model/useDailyStats";
 import { useStreak } from "@/entities/streak/model/useStreak";
 import { useToggleMission } from "@/features/toggle-mission/model/useToggleMission";
-import { useCheckinToday } from "@/features/checkin-today/model/useCheckinToday";
 import { useStartFocusSession } from "@/features/start-focus-session/model/useStartFocusSession";
 
 export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => void }) {
@@ -17,7 +16,6 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
   const { data: stats } = useDailyStats();
   const { data: streak } = useStreak();
   const toggleMission = useToggleMission();
-  const checkinToday = useCheckinToday();
   const startFocusSession = useStartFocusSession();
 
   const completedCount = missions.filter((mission) => mission.isCompleted).length;
@@ -26,7 +24,6 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
 
   function handleToggle(id: string, next: boolean) {
     toggleMission.mutate({ id, isCompleted: next });
-    checkinToday.mutate({ missionId: id, isCompleted: next });
   }
 
   return (
