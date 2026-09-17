@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { missionsQueryKey } from "@/entities/mission/model/useMissions";
 import { dailyStatsQueryKey } from "@/entities/checkin/model/useDailyStats";
+import { streakQueryKey } from "@/entities/streak/model/useStreak";
 
 async function toggleMission(input: { id: string; isCompleted: boolean }) {
   const { id, isCompleted } = input;
@@ -23,6 +24,7 @@ export function useToggleMission() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: missionsQueryKey });
       queryClient.invalidateQueries({ queryKey: dailyStatsQueryKey });
+      queryClient.invalidateQueries({ queryKey: streakQueryKey });
     },
   });
 }
