@@ -10,7 +10,7 @@ export default function LoginPage() {
           <div className="flex flex-col justify-between gap-9 border-b-2 border-ink bg-red p-8 sm:border-b-0 sm:border-r-2 sm:p-11">
             <Logo tone="paper" />
 
-            <h1 className="font-display text-[32px] leading-[1.25] text-paper-3 sm:text-[46px] sm:leading-[1.25]">
+            <h1 className="font-display text-[32px] leading-tight text-paper-3 sm:text-[46px] sm:leading-tight">
               오늘도 미루면
               <br />
               내일의 내가 운다
@@ -37,7 +37,8 @@ export default function LoginPage() {
             <OAuthButtons />
 
             <p className="text-[10.5px] font-semibold leading-[1.75] text-ink-soft">
-              로그인하면 서비스 이용약관과 개인정보 처리방침에 동의하는 것으로 봅니다.
+              로그인하면 서비스 이용약관과 개인정보 처리방침에 동의하는 것으로
+              봅니다.
             </p>
 
             <ThemeToggle />
