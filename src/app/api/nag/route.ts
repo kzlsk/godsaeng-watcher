@@ -4,7 +4,8 @@ import { generateNagMessage } from "@/shared/lib/ai/callOpenAI";
 import type { NagPromptContext } from "@/shared/lib/ai/buildNagPrompt";
 import { NAG_PERSONAS, type NagPersonaId } from "@/shared/config/personas";
 import type { NagMessage } from "@/entities/nag/model/types";
-import { getTodayRange, getWeekRange } from "@/entities/focus-session/model/dateRange";
+import { getWeekRange } from "@/entities/focus-session/model/dateRange";
+import { getAppDayRange, getAppToday } from "@/shared/lib/date/getAppToday";
 import { getTodayDateString, getWeekStartDateString } from "@/entities/streak/model/date";
 import { calculateStreak } from "@/entities/streak/model/calculateStreak";
 import { calculateWeeklyScore } from "@/entities/streak/model/calculateWeeklyScore";
@@ -86,7 +87,7 @@ async function collectNagAggregate(
   supabase: SupabaseClient,
 ): Promise<{ aggregate: NagAggregate } | { error: string }> {
   const now = new Date();
-  const todayRange = getTodayRange(now);
+  const todayRange = getAppDayRange(getAppToday(now));
   const weekRange = getWeekRange(now);
 
   const [missionsResult, todayFocusResult, weekFocusResult, checkinsResult] = await Promise.all([
