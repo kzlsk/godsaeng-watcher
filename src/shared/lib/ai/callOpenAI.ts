@@ -54,9 +54,14 @@ async function requestOpenAI(system: string, user: string, apiKey: string): Prom
 
 export async function generateNagMessage(context: NagPromptContext): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const history = Array.from(
-    new Set([...(context.recentQuotes ?? []), ...getRecentQuotes(context.mode, context.personaId)]),
-  );
+  const recentFromMemory = getRecentQuotes(context.mode, context.personaId);
+  const history = Array.from(new Set([...(context.recentQuotes ?? []), ...recentFromMemory]));
+  // "정말 연속으로 같은 문구가 나왔는지"만 판단할 때는 방금 실제로 내보낸 문구 하나와만
+  // 비교한다. history(최대 5개)에는 과거에 폴백으로 대체된 문구도 섞여 들어가 있는데,
+  // 폴백 풀은 페르소나·모드당 4개뿐이라 그 문구들과 통째로 비교하면 한 번 폴백이 섞이는
+  // 순간부터 이후의 정상적인 새 OpenAI 응답까지 "중복"으로 오판해 계속 폴백으로 되돌리는
+  // 악순환이 생긴다. history 전체는 prompt의 "반복 금지" 힌트(부드러운 유도)에만 쓴다.
+  const lastQuote = recentFromMemory[0];
 
   if (!apiKey) {
     const fallback = pickFallbackMessage(context.mode, context.personaId, history);
@@ -68,13 +73,17 @@ export async function generateNagMessage(context: NagPromptContext): Promise<str
 
   try {
     const text = await requestOpenAI(system, user, apiKey);
-    if (!text || history.includes(text)) {
+    if (!text || text === lastQuote) {
       throw new Error("empty or duplicate OpenAI response");
     }
 
     recordQuote(context.mode, context.personaId, text);
     return text;
-  } catch {
+  } catch (error) {
+    console.warn(
+      "generateNagMessage: OpenAI 응답을 사용하지 못해 폴백 문구로 대체함:",
+      error instanceof Error ? error.message : error,
+    );
     const fallback = pickFallbackMessage(context.mode, context.personaId, history);
     recordQuote(context.mode, context.personaId, fallback);
     return fallback;
