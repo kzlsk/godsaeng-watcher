@@ -18,7 +18,9 @@ export function formatDeadlineLabel(deadline: string, now: Date): string | null 
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-// rows는 started_at 내림차순으로 정렬되어 있어야 한다 (가장 최근 세그먼트가 rows[0]).
+// rows는 started_at 내림차순으로 정렬되어 있어야 하고, 오늘(자정~자정) 범위의
+// 세그먼트여야 한다 (elapsedSeconds가 "이 미션의 오늘 누적 집중시간"이 되도록 —
+// 미션은 하루 단위 개념이라 여러 날에 걸친 누적은 보여주지 않는다).
 export function toFocusSession(rows: FocusSessionRow[], now: Date = new Date()): FocusSession {
   if (rows.length === 0) {
     return {
@@ -41,7 +43,9 @@ export function toFocusSession(rows: FocusSessionRow[], now: Date = new Date()):
     return sum + Math.max(0, Math.round((end.getTime() - new Date(row.started_at).getTime()) / 1000));
   }, 0);
 
-  const status: FocusSessionStatus = latest.ended_at ? "paused" : "running";
+  // "일시정지"는 DB에 반영되지 않는 프론트 전용 상태라, 서버 관점에서는 열린
+  // 세그먼트가 없으면(최신 행이 닫혀 있으면) 항상 idle이다.
+  const status: FocusSessionStatus = latest.ended_at ? "idle" : "running";
   const mission = latest.missions;
 
   return {

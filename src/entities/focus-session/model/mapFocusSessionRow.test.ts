@@ -36,13 +36,13 @@ describe("toFocusSession", () => {
     expect(session.targetMinutes).toBe(30);
   });
 
-  it("ended_at이 있는 최신 행이면 paused이고 기록된 구간만큼만 센다", () => {
+  it("ended_at이 있는 최신 행이면 idle이고 기록된 구간만큼만 센다 (DB 누적 집중시간)", () => {
     const session = toFocusSession(
       [makeRow({ started_at: "2026-09-17T09:00:00.000Z", ended_at: "2026-09-17T09:20:00.000Z" })],
       NOW,
     );
 
-    expect(session.status).toBe("paused");
+    expect(session.status).toBe("idle");
     expect(session.elapsedSeconds).toBe(20 * 60);
   });
 

@@ -8,6 +8,9 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 const FOCUS_SESSION_SELECT =
   "id, mission_id, started_at, ended_at, missions(title, deadline, duration_min)";
 
+// 미션은 하루 단위 개념이라 "DB 누적 집중시간"(idle일 때 화면에 표시되는 기준값)도
+// 오늘(자정~자정) 범위로만 계산한다. 새벽 시간대 컷오프(예: 새벽 2시 기준)는 별도
+// 티켓에서 다룰 예정이라 지금은 단순 UTC 자정 기준(getTodayRange)만 쓴다.
 async function fetchTodaySession(supabase: SupabaseClient) {
   const { start, end } = getTodayRange();
   return supabase
@@ -18,7 +21,10 @@ async function fetchTodaySession(supabase: SupabaseClient) {
     .order("started_at", { ascending: false });
 }
 
-async function closeOpenSession(supabase: SupabaseClient) {
+// endedAt을 명시하지 않으면 "지금" 시점에 세그먼트를 닫는다. 일시정지 중 재개/중지할
+// 때는 호출부가 일시정지 시점을 endedAt으로 넘겨서, 일시정지해 있던 시간이
+// duration_min에 섞여 들어가지 않도록 한다.
+async function closeOpenSession(supabase: SupabaseClient, endedAt: Date) {
   const { data: openRow, error: openError } = await supabase
     .from("focus_sessions")
     .select("id, started_at")
@@ -30,7 +36,6 @@ async function closeOpenSession(supabase: SupabaseClient) {
   if (openError) return { error: openError };
   if (!openRow) return { error: null };
 
-  const endedAt = new Date();
   const durationMin = Math.max(0, Math.round((endedAt.getTime() - new Date(openRow.started_at).getTime()) / 60000));
 
   const { error } = await supabase
@@ -53,11 +58,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { missionId?: string; action: "start" | "pause" | "resume" | "stop" };
+  const body = (await request.json()) as {
+    missionId?: string;
+    action: "start" | "resume" | "stop";
+    endedAt?: string;
+  };
   const supabase = await createClient();
+  const endedAt = body.endedAt ? new Date(body.endedAt) : new Date();
 
   if (body.action === "start" || body.action === "resume") {
-    const { error: closeError } = await closeOpenSession(supabase);
+    const { error: closeError } = await closeOpenSession(supabase, endedAt);
     if (closeError) {
       return NextResponse.json({ error: closeError.message }, { status: 500 });
     }
@@ -70,9 +80,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
   } else {
-    // pause/stop 둘 다 열린 세그먼트를 마감하고 새 세그먼트는 만들지 않는다.
-    // "일시정지"와 "중지"의 차이는 재개 의도 여부일 뿐이라 클라이언트에서만 구분한다.
-    const { error: closeError } = await closeOpenSession(supabase);
+    // stop: 열린 세그먼트를 마감만 하고 새 세그먼트는 만들지 않는다 → idle로 복귀.
+    const { error: closeError } = await closeOpenSession(supabase, endedAt);
     if (closeError) {
       return NextResponse.json({ error: closeError.message }, { status: 500 });
     }
