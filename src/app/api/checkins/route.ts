@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
 import { toCheckinRecord, type CheckinRow } from "@/entities/checkin/model/mapCheckinRow";
-import { getDayRange, getTodayDateString } from "@/entities/checkin/model/date";
+import { getAppDayRange, getAppToday } from "@/shared/lib/date/getAppToday";
 import type { DailyStats, UpsertCheckinInput } from "@/entities/checkin/model/types";
 
 const CHECKIN_SELECT = "date, applications, problems";
 
 function resolveDate(searchParams: URLSearchParams): string {
   const date = searchParams.get("date");
-  if (!date || date === "today") return getTodayDateString();
+  if (!date || date === "today") return getAppToday();
   return date;
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const date = resolveDate(searchParams);
-  const { start, end } = getDayRange(date);
+  const { start, end } = getAppDayRange(date);
 
   const supabase = await createClient();
 
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as UpsertCheckinInput;
-  const date = getTodayDateString();
+  const date = getAppToday();
 
   const payload: Record<string, unknown> = { date };
   if (typeof body.applications === "number") payload.applications = body.applications;

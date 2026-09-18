@@ -71,6 +71,40 @@ describe("GET /api/streak", () => {
     expect(body.currentStreak).toBe(2);
   });
 
+  it("오늘 체크인이 아직 없으면 isTodayPending=true, potentialStreak=currentStreak+1을 반환한다", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-17T12:00:00.000Z")); // 목요일, 오늘 체크인 없음
+
+    mockSupabase(
+      [
+        { date: "2026-09-16", applications: 1, problems: 0 },
+        { date: "2026-09-15", applications: 0, problems: 1 },
+      ],
+      [],
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.currentStreak).toBe(2);
+    expect(body.isTodayPending).toBe(true);
+    expect(body.potentialStreak).toBe(3);
+  });
+
+  it("오늘 이미 체크인했으면 isTodayPending=false, potentialStreak=currentStreak를 반환한다", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-17T12:00:00.000Z"));
+
+    mockSupabase([{ date: "2026-09-17", applications: 2, problems: 0 }], []);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.currentStreak).toBe(1);
+    expect(body.isTodayPending).toBe(false);
+    expect(body.potentialStreak).toBe(1);
+  });
+
   it("Supabase 에러가 나면 500과 에러 메시지를 반환한다", async () => {
     const client = {
       from: () => {
