@@ -11,7 +11,7 @@ interface MissionItemProps {
 }
 
 export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProps) {
-  const { topic, todo, deadline, isImportant, isCompleted, actualFocusMinutes } = mission;
+  const { topic, todo, deadline, isImportant, isCompleted, actualFocusMinutes, overdueDays } = mission;
   const deadlineText = formatMissionDeadline(deadline);
 
   return (
@@ -50,6 +50,7 @@ export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProp
       </div>
 
       {isImportant ? <Badge variant="danger">중요</Badge> : null}
+      {overdueDays && overdueDays > 0 ? <Badge variant="solid">{overdueDays}일 지연</Badge> : null}
 
       {isCompleted ? (
         <Badge variant="success">완료</Badge>

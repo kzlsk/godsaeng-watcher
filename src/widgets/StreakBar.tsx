@@ -23,7 +23,9 @@ export function StreakBar() {
       <StreakDots days={streak.last7Days} />
 
       <p className="text-[12px] font-semibold text-ink-soft">
-        오늘 남은 {remaining}개 중 하나만 끝내도 기록은 이어집니다.
+        {streak.isTodayPending && streak.potentialStreak !== undefined
+          ? `오늘 완료 시 ${streak.potentialStreak}일이 됩니다.`
+          : `오늘 남은 ${remaining}개 중 하나만 끝내도 기록은 이어집니다.`}
       </p>
     </Panel>
   );

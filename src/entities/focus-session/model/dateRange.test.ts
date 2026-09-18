@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTodayRange, getWeekRange } from "./dateRange";
-
-describe("getTodayRange", () => {
-  it("UTC 기준 오늘 00:00 ~ 다음날 00:00 범위를 반환한다", () => {
-    const range = getTodayRange(new Date("2026-09-17T15:30:00.000Z"));
-
-    expect(range.start).toBe("2026-09-17T00:00:00.000Z");
-    expect(range.end).toBe("2026-09-18T00:00:00.000Z");
-  });
-});
+import { getWeekRange } from "./dateRange";
 
 describe("getWeekRange", () => {
   it("목요일 기준으로 그 주 월요일 00:00 ~ 다음 월요일 00:00 범위를 반환한다", () => {

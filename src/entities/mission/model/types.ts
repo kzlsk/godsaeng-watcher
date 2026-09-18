@@ -6,6 +6,8 @@ export interface Mission {
   isImportant: boolean;
   isCompleted: boolean;
   actualFocusMinutes: number | null;
+  // shared/lib/demo-store.ts(스코프 밖)의 데모 데이터는 이 필드를 채우지 않으므로 optional로 둔다.
+  overdueDays?: number;
 }
 
 export interface CreateMissionInput {

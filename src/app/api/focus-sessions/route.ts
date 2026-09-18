@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
 import { toFocusSession, type FocusSessionRow } from "@/entities/focus-session/model/mapFocusSessionRow";
-import { getTodayRange } from "@/entities/focus-session/model/dateRange";
+import { getAppDayRange } from "@/shared/lib/date/getAppToday";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -9,10 +9,9 @@ const FOCUS_SESSION_SELECT =
   "id, mission_id, started_at, ended_at, missions(title, deadline, duration_min)";
 
 // 미션은 하루 단위 개념이라 "DB 누적 집중시간"(idle일 때 화면에 표시되는 기준값)도
-// 오늘(자정~자정) 범위로만 계산한다. 새벽 시간대 컷오프(예: 새벽 2시 기준)는 별도
-// 티켓에서 다룰 예정이라 지금은 단순 UTC 자정 기준(getTodayRange)만 쓴다.
+// 오늘(새벽 2시 컷오프 기준, getAppDayRange) 범위로만 계산한다.
 async function fetchTodaySession(supabase: SupabaseClient) {
-  const { start, end } = getTodayRange();
+  const { start, end } = getAppDayRange();
   return supabase
     .from("focus_sessions")
     .select(FOCUS_SESSION_SELECT)

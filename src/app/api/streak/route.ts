@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
-import { calculateStreak } from "@/entities/streak/model/calculateStreak";
+import { calculateStreak, isTodayPending } from "@/entities/streak/model/calculateStreak";
+import { calculatePotentialStreak } from "@/entities/streak/model/calculatePotentialStreak";
 import { calculateWeeklyScore } from "@/entities/streak/model/calculateWeeklyScore";
 import { buildLast7Days } from "@/entities/streak/model/buildLast7Days";
 import { getTodayDateString, getWeekStartDateString } from "@/entities/streak/model/date";
@@ -36,11 +37,16 @@ export async function GET() {
   const thisWeekScore = calculateWeeklyScore(checkedInDates, thisWeekStart);
   const lastWeekScore = calculateWeeklyScore(checkedInDates, lastWeekStart);
 
+  const currentStreak = calculateStreak(checkedInDates, today);
+  const pending = isTodayPending(checkedInDates, today);
+
   const summary: StreakSummary = {
-    currentStreak: calculateStreak(checkedInDates, today),
+    currentStreak,
     weeklyScore: thisWeekScore,
     weeklyScoreDelta: thisWeekScore - lastWeekScore,
     last7Days: buildLast7Days(checkedInDates, today),
+    isTodayPending: pending,
+    potentialStreak: calculatePotentialStreak(currentStreak, pending),
   };
 
   return NextResponse.json(summary);
