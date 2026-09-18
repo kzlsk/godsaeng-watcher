@@ -14,7 +14,10 @@ export interface MissionRow {
 }
 
 // today(getAppToday 형식, 새벽 2시 컷오프 기준)를 생략하면 현재 시각 기준 오늘을 사용한다.
-export function toMission(row: MissionRow, today: string = getAppToday()): Mission {
+export function toMission(
+  row: MissionRow,
+  today: string = getAppToday(),
+): Mission {
   // 미션 목록의 "· N분"과 집중 타이머 패널이 같은 기준(오늘)을 보여주도록,
   // 전체 기간이 아니라 오늘 시작된 세그먼트만 합산한다.
   const actualFocusMinutes = (row.focus_sessions ?? [])

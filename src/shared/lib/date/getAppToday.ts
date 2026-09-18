@@ -21,9 +21,14 @@ export function getAppToday(reference: Date = new Date()): string {
 
 // getAppToday()가 반환하는 "앱 하루" 문자열에 대응하는 UTC 조회 범위를 반환한다.
 // (해당 날짜 KST 새벽 2시 ~ 다음날 KST 새벽 2시, DB의 timestamptz 컬럼과 gte/lt 비교용)
-export function getAppDayRange(dateStr: string = getAppToday()): { start: string; end: string } {
+export function getAppDayRange(dateStr: string = getAppToday()): {
+  start: string;
+  end: string;
+} {
   const utcMidnight = new Date(`${dateStr}T00:00:00.000Z`).getTime();
-  const start = new Date(utcMidnight + (CUTOFF_HOUR * 60 - APP_TZ_OFFSET_MINUTES) * MS_PER_MINUTE);
+  const start = new Date(
+    utcMidnight + (CUTOFF_HOUR * 60 - APP_TZ_OFFSET_MINUTES) * MS_PER_MINUTE,
+  );
   const end = new Date(start.getTime() + MS_PER_DAY);
   return { start: start.toISOString(), end: end.toISOString() };
 }

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
-import { toMission, type MissionRow } from "@/entities/mission/model/mapMissionRow";
+import {
+  toMission,
+  type MissionRow,
+} from "@/entities/mission/model/mapMissionRow";
 import type { UpdateMissionInput } from "@/entities/mission/model/types";
 
-const MISSION_SELECT = "id, category, title, deadline, urgent, done, focus_sessions(duration_min)";
+const MISSION_SELECT =
+  "id, category, title, deadline, urgent, done, focus_sessions(duration_min, started_at)";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,7 +33,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "미션을 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json(
+      { error: "미션을 찾을 수 없습니다." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json(toMission(data as MissionRow));
@@ -39,10 +46,18 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   const { id } = await params;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("missions").delete().eq("id", id).select("id").single();
+  const { data, error } = await supabase
+    .from("missions")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: "미션을 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json(
+      { error: "미션을 찾을 수 없습니다." },
+      { status: 404 },
+    );
   }
 
   return new NextResponse(null, { status: 204 });
