@@ -1,28 +1,81 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
 import { Field, TextInput } from "@/shared/ui/Field";
 import { cn } from "@/shared/lib/cn";
 import { useAddMission } from "@/features/add-mission/model/useAddMission";
+import { DeadlineWheelPicker } from "@/features/add-mission/ui/DeadlineWheelPicker";
+import { computeDefaultDeadlineTime } from "@/features/add-mission/ui/computeDefaultDeadlineTime";
+import { minutesForHour, selectableHours } from "@/features/add-mission/ui/deadlineTimeRange";
 
 interface AddMissionModalProps {
   open: boolean;
   onClose: () => void;
 }
 
+// "지금 이 화면에서 마감 시각을 고를 수 있는 범위"를 30초마다 최신화한다. 이 화면은
+// 오늘 자정을 넘는 입력을 만들지 않는 것을 전제로 하므로(007의 toDeadlineIso 자정 롤오버는
+// 여기서는 발생하지 않음), 시간이 흘러 이미 지난 값이 되면 다음 유효한 시각으로 당겨온다.
+const NOW_TICK_MS = 30_000;
+
+function pad(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
 export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
   const [topic, setTopic] = useState("");
   const [todo, setTodo] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [now, setNow] = useState(() => new Date());
+  const [deadlineEnabled, setDeadlineEnabled] = useState(false);
+  const [deadlineTime, setDeadlineTime] = useState(() => computeDefaultDeadlineTime());
   const [isImportant, setIsImportant] = useState(false);
   const addMission = useAddMission();
+
+  // 모달이 닫혀 있는 동안(마운트 이후 오래 지난 경우 포함) now가 오래된 값일 수 있으므로,
+  // 열리는 시점에 렌더 중 바로 최신 시각으로 맞춘다("prop이 바뀌면 상태를 조정하는" React의
+  // 공식 패턴 — useEffect 안에서 동기적으로 setState하면 이 프로젝트 lint 규칙에 걸림).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      const freshNow = new Date();
+      setNow(freshNow);
+      setDeadlineTime(computeDefaultDeadlineTime(freshNow));
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      const nextNow = new Date();
+      setNow(nextNow);
+      setDeadlineTime((prev) => {
+        const prevMinutes = prev.hour * 60 + prev.minute;
+        const nowMinutes = nextNow.getHours() * 60 + nextNow.getMinutes();
+        return prevMinutes >= nowMinutes ? prev : computeDefaultDeadlineTime(nextNow);
+      });
+    }, NOW_TICK_MS);
+    return () => clearInterval(interval);
+  }, [open]);
+
+  const hourOptions = selectableHours(now);
+  const minuteOptions = minutesForHour(deadlineTime.hour, now);
+  const deadline = deadlineEnabled ? `${pad(deadlineTime.hour)}:${pad(deadlineTime.minute)}` : "";
+
+  function handleChangeHour(hour: number) {
+    setDeadlineTime((prev) => {
+      const minutes = minutesForHour(hour, now);
+      const minute = minutes.includes(prev.minute) ? prev.minute : minutes[0];
+      return { hour, minute };
+    });
+  }
 
   function resetAndClose() {
     setTopic("");
     setTodo("");
-    setDeadline("");
+    setDeadlineEnabled(false);
     setIsImportant(false);
     onClose();
   }
@@ -72,13 +125,30 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
           </Field>
 
           <Field label="마감 시간">
-            <TextInput
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-              placeholder="13:00"
-            />
+            <div className="flex w-full items-center justify-between">
+              <span className="text-[13px] font-bold text-ink">
+                {deadlineEnabled ? `오늘 ${pad(deadlineTime.hour)}:${pad(deadlineTime.minute)} 마감` : "마감 없음"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDeadlineEnabled((value) => !value)}
+                className="border-2 border-ink px-3 py-1.5 text-[11.5px] font-bold text-ink hover:bg-surface-muted"
+              >
+                {deadlineEnabled ? "마감 없음" : "마감 설정"}
+              </button>
+            </div>
+            {deadlineEnabled && (
+              <DeadlineWheelPicker
+                hours={hourOptions}
+                minutes={minuteOptions}
+                hour={deadlineTime.hour}
+                minute={deadlineTime.minute}
+                onChangeHour={handleChangeHour}
+                onChangeMinute={(minute) => setDeadlineTime((prev) => ({ ...prev, minute }))}
+              />
+            )}
             <span className="text-[11.5px] font-semibold text-ink-soft">
-              실제 집중 시간은 완료 시 자동으로 기록됩니다.
+              실제 집중 시간은 완료 시 자동으로 기록됩니다. 마감은 오늘 안에서만 고를 수 있어요.
             </span>
           </Field>
 
