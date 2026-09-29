@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/Badge";
 import { Button } from "@/shared/ui/Button";
@@ -8,11 +11,22 @@ interface MissionItemProps {
   mission: Mission;
   onToggle: () => void;
   onStartFocus: () => void;
+  onDelete: () => void;
+  isDeleting?: boolean;
 }
 
-export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProps) {
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="size-4" aria-hidden="true">
+      <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" strokeLinecap="square" />
+    </svg>
+  );
+}
+
+export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDeleting = false }: MissionItemProps) {
   const { topic, todo, deadline, isImportant, isCompleted, actualFocusMinutes, overdueDays } = mission;
   const deadlineText = formatMissionDeadline(deadline);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   return (
     <div
@@ -52,12 +66,35 @@ export function MissionItem({ mission, onToggle, onStartFocus }: MissionItemProp
       {isImportant ? <Badge variant="danger">중요</Badge> : null}
       {overdueDays && overdueDays > 0 ? <Badge variant="solid">{overdueDays}일 지연</Badge> : null}
 
-      {isCompleted ? (
-        <Badge variant="success">완료</Badge>
+      {isConfirmingDelete ? (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[12px] font-bold text-red-shadow">삭제할까요?</span>
+          <Button variant="solid" size="sm" onClick={onDelete} disabled={isDeleting}>
+            삭제
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
+            취소
+          </Button>
+        </div>
       ) : (
-        <Button variant="solid" size="sm" onClick={onStartFocus}>
-          집중 시작
-        </Button>
+        <>
+          {isCompleted ? (
+            <Badge variant="success">완료</Badge>
+          ) : (
+            <Button variant="solid" size="sm" onClick={onStartFocus}>
+              집중 시작
+            </Button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsConfirmingDelete(true)}
+            aria-label="미션 삭제"
+            title="미션 삭제"
+            className="flex size-7.5 shrink-0 items-center justify-center border-2 border-transparent text-ink-soft transition-colors hover:border-ink hover:text-ink"
+          >
+            <TrashIcon />
+          </button>
+        </>
       )}
     </div>
   );

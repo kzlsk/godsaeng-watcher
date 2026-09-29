@@ -10,6 +10,7 @@ import { useDailyStats } from "@/entities/checkin/model/useDailyStats";
 import { useStreak } from "@/entities/streak/model/useStreak";
 import { useToggleMission } from "@/features/toggle-mission/model/useToggleMission";
 import { useStartFocusSession } from "@/features/start-focus-session/model/useStartFocusSession";
+import { useDeleteMission } from "@/features/delete-mission/model/useDeleteMission";
 
 export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => void }) {
   const { data: missions = [] } = useMissions();
@@ -17,6 +18,7 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
   const { data: streak } = useStreak();
   const toggleMission = useToggleMission();
   const startFocusSession = useStartFocusSession();
+  const deleteMission = useDeleteMission();
 
   const completedCount = missions.filter((mission) => mission.isCompleted).length;
   const totalCount = missions.length;
@@ -61,17 +63,21 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
               mission={mission}
               onToggle={() => handleToggle(mission.id, !mission.isCompleted)}
               onStartFocus={() => startFocusSession.mutate({ missionId: mission.id, action: "start" })}
+              onDelete={() => deleteMission.mutate(mission.id)}
+              isDeleting={deleteMission.isPending && deleteMission.variables === mission.id}
             />
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenAddMission}
-          className="m-5 mt-6.25 border-2 border-ink py-3.25 text-[13px] font-bold text-ink"
-        >
-          + 미션 추가
-        </button>
+        <div className="border-t-2 border-ink px-5 py-5 sm:px-6">
+          <button
+            type="button"
+            onClick={onOpenAddMission}
+            className="w-full border-2 border-ink px-6 py-4.5 text-[14.5px] font-bold text-ink transition-colors hover:bg-surface-muted"
+          >
+            + 미션 추가
+          </button>
+        </div>
       </Panel>
 
       {totalCount > 0 ? <ProgressBar value={completionRate} className="sm:hidden" /> : null}
