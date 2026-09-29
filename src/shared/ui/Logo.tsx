@@ -9,7 +9,7 @@ interface LogoProps {
 export function Logo({ size = "md", tone = "ink", className }: LogoProps) {
   const boxSize = size === "md" ? "size-8 text-[13px]" : "size-7 text-[9px]";
   const textSize = size === "md" ? "text-[19px]" : "text-[15px]";
-  const boxTone = tone === "ink" ? "border-ink bg-red-shadow text-paper-3" : "border-paper-3 bg-red text-paper-3";
+  const boxTone = tone === "ink" ? "border-line bg-red-shadow text-paper-3" : "border-paper-3 bg-red text-paper-3";
   const textTone = tone === "ink" ? "text-ink" : "text-paper-3";
 
   return (

@@ -91,15 +91,15 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
     <Modal open={open} onClose={resetAndClose}>
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col border-[3px] border-ink bg-paper-2 shadow-brut-red"
+        className="flex w-full flex-col border-[3px] border-line bg-paper-2 shadow-brut-red"
       >
-        <div className="flex w-full items-center justify-between border-b-2 border-ink px-5.5 py-4">
+        <div className="flex w-full items-center justify-between border-b-2 border-line px-5.5 py-4">
           <span className="font-display text-[21px] text-ink">미션 추가</span>
           <button
             type="button"
             onClick={resetAndClose}
             aria-label="닫기"
-            className="flex size-7.5 items-center justify-center border-2 border-ink text-[12px] font-bold text-ink"
+            className="flex size-7.5 items-center justify-center border-2 border-line-strong text-[12px] font-bold text-ink"
           >
             ✕
           </button>
@@ -132,7 +132,7 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
               <button
                 type="button"
                 onClick={() => setDeadlineEnabled((value) => !value)}
-                className="border-2 border-ink px-3 py-1.5 text-[11.5px] font-bold text-ink hover:bg-surface-muted"
+                className="border-2 border-line-strong px-3 py-1.5 text-[11.5px] font-bold text-ink hover:bg-surface-muted"
               >
                 {deadlineEnabled ? "마감 없음" : "마감 설정"}
               </button>

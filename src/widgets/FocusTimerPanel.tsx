@@ -52,7 +52,7 @@ export function FocusTimerPanel() {
   }, [status]);
 
   if (!session) {
-    return <div className="h-57.75 w-full animate-pulse border-2 border-ink bg-surface-muted" />;
+    return <div className="h-57.75 w-full animate-pulse border-2 border-line bg-surface-muted" />;
   }
 
   const missionId = session.missionId ?? undefined;

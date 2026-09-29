@@ -5,9 +5,9 @@ import { OAuthButtons } from "@/features/login-with-oauth/ui/OAuthButtons";
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-surface p-4 sm:p-10">
-      <div className="w-full max-w-244 border-2 border-ink bg-paper-2 p-0.5 shadow-brut-sm">
+      <div className="w-full max-w-244 border-2 border-line bg-paper-2 p-0.5 shadow-brut-sm">
         <div className="grid w-full grid-cols-1 bg-surface sm:grid-cols-[1.15fr_1fr]">
-          <div className="flex flex-col justify-between gap-9 border-b-2 border-ink bg-red p-8 sm:border-b-0 sm:border-r-2 sm:p-11">
+          <div className="flex flex-col justify-between gap-9 border-b-2 border-line bg-red p-8 sm:border-b-0 sm:border-r-2 sm:p-11">
             <Logo tone="paper" />
 
             <h1 className="font-display text-[32px] leading-tight text-paper-3 sm:text-[46px] sm:leading-tight">

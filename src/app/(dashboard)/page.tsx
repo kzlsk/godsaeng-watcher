@@ -18,7 +18,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full justify-center bg-surface pb-16 sm:p-10 sm:pb-10">
-      <div className="w-full border-ink bg-paper-2 sm:max-w-260 sm:border-2 sm:p-0.5 sm:shadow-brut">
+      <div className="w-full border-line bg-paper-2 sm:max-w-260 sm:border-2 sm:p-0.5 sm:shadow-brut">
         <div className="flex w-full flex-col bg-surface">
           <DashboardHeader
             currentStreak={streak?.currentStreak ?? 0}

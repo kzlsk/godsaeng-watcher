@@ -8,7 +8,7 @@ export function StreakBar() {
   const { data: streak } = useStreak();
 
   if (!streak) {
-    return <div className="h-32.5 w-full animate-pulse border-2 border-ink bg-surface-muted" />;
+    return <div className="h-32.5 w-full animate-pulse border-2 border-line bg-surface-muted" />;
   }
 
   const remaining = Math.max(0, streak.last7Days.filter((day) => !day).length - 1);

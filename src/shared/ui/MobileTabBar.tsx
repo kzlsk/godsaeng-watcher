@@ -8,7 +8,7 @@ export function MobileTabBar() {
   const [active, setActive] = useState<string>(MOBILE_NAV_ITEMS[0].id);
 
   return (
-    <div className="flex w-full border-t-2 border-ink bg-paper-2 sm:hidden">
+    <div className="flex w-full border-t-2 border-line bg-paper-2 sm:hidden">
       {MOBILE_NAV_ITEMS.map((item) => (
         <button
           key={item.id}

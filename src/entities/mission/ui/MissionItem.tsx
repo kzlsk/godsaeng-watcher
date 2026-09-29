@@ -41,7 +41,7 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
         aria-label={isCompleted ? "미션 완료 취소" : "미션 완료 처리"}
         className={cn(
           "flex size-6 shrink-0 items-center justify-center border-2 text-[11px] font-bold",
-          isCompleted ? "border-green bg-green text-paper-3" : "border-ink bg-transparent",
+          isCompleted ? "border-green bg-green text-paper-3" : "border-line-strong bg-transparent",
         )}
       >
         {isCompleted ? "✓" : ""}
@@ -90,7 +90,7 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
             onClick={() => setIsConfirmingDelete(true)}
             aria-label="미션 삭제"
             title="미션 삭제"
-            className="flex size-7.5 shrink-0 items-center justify-center border-2 border-transparent text-ink-soft transition-colors hover:border-ink hover:text-ink"
+            className="flex size-7.5 shrink-0 items-center justify-center border-2 border-transparent text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
           >
             <TrashIcon />
           </button>

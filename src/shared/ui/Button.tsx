@@ -6,9 +6,9 @@ type ButtonSize = "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   solid: "bg-ink text-paper-3 border-ink hover:opacity-90",
-  outline: "bg-transparent text-ink border-ink hover:bg-surface-muted",
-  kakao: "bg-yellow text-ink border-ink hover:opacity-90",
-  google: "bg-paper text-ink border-ink hover:bg-surface-muted",
+  outline: "bg-transparent text-ink border-line-strong hover:bg-surface-muted",
+  kakao: "bg-yellow text-ink border-line-strong hover:opacity-90",
+  google: "bg-paper text-ink border-line-strong hover:bg-surface-muted",
   cream: "bg-paper-3 text-red-shadow border-paper-3 hover:opacity-90",
   ghost: "bg-transparent text-ink-soft border-transparent hover:text-ink",
 };

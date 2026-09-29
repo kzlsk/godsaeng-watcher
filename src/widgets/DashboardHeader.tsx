@@ -34,7 +34,7 @@ export function DashboardHeader({
   }
 
   return (
-    <div className="flex w-full items-center justify-between border-b-2 border-ink bg-paper-2 px-4 py-3.75 sm:px-6.5 sm:py-4.25">
+    <div className="flex w-full items-center justify-between border-b-2 border-line bg-paper-2 px-4 py-3.75 sm:px-6.5 sm:py-4.25">
       <div className="flex items-center gap-3">
         <Logo size="sm" />
         <span className="hidden text-[12.5px] font-semibold text-ink-soft sm:inline">
@@ -49,7 +49,7 @@ export function DashboardHeader({
         <ThemeToggle />
         {/* 닉네임은 잘라내지 않고 전체를 그대로 표시한다. */}
         <span
-          className="hidden whitespace-nowrap border-2 border-ink px-3.25 py-2.25 text-[12.5px] font-bold text-ink sm:inline-block"
+          className="hidden whitespace-nowrap border-2 border-line px-3.25 py-2.25 text-[12.5px] font-bold text-ink sm:inline-block"
           title={nickname}
         >
           {nickname}

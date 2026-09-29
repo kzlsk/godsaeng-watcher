@@ -51,7 +51,7 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
       </Panel>
 
       <Panel className="w-full">
-        <div className="flex items-center justify-between border-b-2 border-ink px-5 py-4">
+        <div className="flex items-center justify-between border-b-2 border-line px-5 py-4">
           <span className="font-display text-[19px] text-ink">오늘의 미션</span>
           <Badge variant="success">{completedCount} / {totalCount} 완료</Badge>
         </div>
@@ -69,11 +69,11 @@ export function MissionBoard({ onOpenAddMission }: { onOpenAddMission: () => voi
           ))}
         </div>
 
-        <div className="border-t-2 border-ink px-5 py-5 sm:px-6">
+        <div className="border-t-2 border-line px-5 py-5 sm:px-6">
           <button
             type="button"
             onClick={onOpenAddMission}
-            className="w-full border-2 border-ink px-6 py-4.5 text-[14.5px] font-bold text-ink transition-colors hover:bg-surface-muted"
+            className="w-full border-2 border-line-strong px-6 py-4.5 text-[14.5px] font-bold text-ink transition-colors hover:bg-surface-muted"
           >
             + 미션 추가
           </button>

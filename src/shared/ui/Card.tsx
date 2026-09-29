@@ -17,7 +17,7 @@ export function Card({ shadow = "ink", className, children, ...props }: CardProp
   return (
     <div
       className={cn(
-        "border-2 border-ink bg-paper-2 p-0.5",
+        "border-2 border-line bg-paper-2 p-0.5",
         shadowClasses[shadow],
         className,
       )}
@@ -31,7 +31,7 @@ export function Card({ shadow = "ink", className, children, ...props }: CardProp
 export function Panel({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("border-2 border-ink bg-paper-2", className)}
+      className={cn("border-2 border-line bg-paper-2", className)}
       {...props}
     >
       {children}

@@ -109,10 +109,10 @@ export function DeadlineWheelPicker({
   onChangeMinute,
 }: DeadlineWheelPickerProps) {
   return (
-    <div className="relative flex w-full items-center gap-3 border-2 border-ink bg-paper-3 px-3 py-1">
+    <div className="relative flex w-full items-center gap-3 border-2 border-line-strong bg-paper-3 px-3 py-1">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-3 top-1/2 h-11 -translate-y-1/2 border-y-2 border-ink"
+        className="pointer-events-none absolute inset-x-3 top-1/2 h-11 -translate-y-1/2 border-y-2 border-line-strong"
       />
       <WheelColumn values={hours} value={hour} onChange={onChangeHour} ariaLabel="시" />
       <span className="text-[22px] font-extrabold text-ink">:</span>

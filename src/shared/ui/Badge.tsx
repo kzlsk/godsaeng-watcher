@@ -7,7 +7,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   success: "border-green text-green",
   danger: "border-red-shadow text-red-shadow",
   solid: "border-ink bg-ink text-paper-3",
-  neutral: "border-ink text-ink",
+  neutral: "border-line text-ink",
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

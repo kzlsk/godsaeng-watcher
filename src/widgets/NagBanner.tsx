@@ -12,7 +12,7 @@ export function NagBanner({ onPlanTomorrow }: { onPlanTomorrow: () => void }) {
   const regenerate = useRegenerateNag();
 
   if (!nag) {
-    return <div className="h-39 w-full animate-pulse border-[3px] border-ink bg-surface-muted" />;
+    return <div className="h-39 w-full animate-pulse border-[3px] border-line bg-surface-muted" />;
   }
 
   const isSuccess = nag.mode === "success";

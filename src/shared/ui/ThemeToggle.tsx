@@ -28,7 +28,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn("inline-flex items-start border-2 border-ink p-0.5", className)}>
+    <div className={cn("inline-flex items-start border-2 border-line-strong p-0.5", className)}>
       <button
         type="button"
         onClick={() => select("light")}

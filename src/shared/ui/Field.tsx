@@ -17,7 +17,7 @@ export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInput
   return (
     <input
       className={cn(
-        "w-full border-2 border-ink bg-transparent px-4.25 py-4 text-[15px] font-bold text-ink outline-none placeholder:text-ink-soft/60",
+        "w-full border-2 border-line-strong bg-transparent px-4.25 py-4 text-[15px] font-bold text-ink outline-none placeholder:text-ink-soft/60",
         className,
       )}
       {...props}
