@@ -110,6 +110,57 @@ describe("GET /api/nag", () => {
     expect(body.mode).toBe("fail");
   });
 
+  it("완료된 미션은 빼고 미완료 미션의 제목·카테고리·마감·긴급 여부만 pendingMissions로 넘긴다", async () => {
+    mockSupabase({
+      missions: {
+        data: [
+          {
+            title: "포트폴리오 제출",
+            category: "취업",
+            deadline: "2026-09-17T09:00:00.000Z",
+            done: true,
+            urgent: true,
+            created_at: "2026-09-17T01:00:00.000Z",
+          },
+          {
+            title: "이분 탐색 2문제",
+            category: "코테",
+            deadline: "2026-09-17T10:00:00.000Z",
+            done: false,
+            urgent: false,
+            created_at: "2026-09-17T02:00:00.000Z",
+          },
+          { title: "회고 쓰기", category: null, deadline: null, done: false, urgent: true, created_at: "2026-09-17T03:00:00.000Z" },
+        ],
+        error: null,
+      },
+    });
+    vi.mocked(generateNagMessage).mockResolvedValue("코테 아직이네.");
+
+    await GET();
+
+    const context = vi.mocked(generateNagMessage).mock.calls[0][0];
+    expect(context.pendingMissions).toEqual([
+      { title: "이분 탐색 2문제", topic: "코테", deadline: "2026-09-17T10:00:00.000Z", urgent: false },
+      { title: "회고 쓰기", topic: null, deadline: null, urgent: true },
+    ]);
+    expect(context.pendingMissions?.some((mission) => mission.title === "포트폴리오 제출")).toBe(false);
+  });
+
+  it("미션이 전부 완료면 pendingMissions는 빈 배열이다", async () => {
+    mockSupabase({
+      missions: {
+        data: [{ title: "회고 쓰기", category: null, deadline: null, done: true, urgent: false, created_at: "2026-09-17T01:00:00.000Z" }],
+        error: null,
+      },
+    });
+    vi.mocked(generateNagMessage).mockResolvedValue("오늘은 인정.");
+
+    await GET();
+
+    expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ mode: "success", pendingMissions: [] }));
+  });
+
   it("오늘 미션이 하나도 없으면 success가 아니라 fail을 유지한다", async () => {
     mockSupabase({ missions: { data: [], error: null } });
     vi.mocked(generateNagMessage).mockResolvedValue("계획을 세운 게 아니라 희망을 적어둔 거였네.");

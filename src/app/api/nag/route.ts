@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
 import { generateNagMessage } from "@/shared/lib/ai/callOpenAI";
 import type { NagPromptContext } from "@/shared/lib/ai/buildNagPrompt";
+import type { NagPendingMission } from "@/shared/lib/ai/pendingMissions";
 import { clampIntensity } from "@/shared/lib/ai/intensityScale";
 import { NAG_PERSONAS, type NagPersonaId } from "@/shared/config/personas";
 import type { NagMessage } from "@/entities/nag/model/types";
@@ -14,12 +15,14 @@ import { resolveCheckedInDates, type CheckinDateRow } from "@/entities/streak/mo
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-const MISSION_SELECT = "title, deadline, done, created_at";
+const MISSION_SELECT = "title, category, deadline, done, urgent, created_at";
 
 interface MissionForNag {
   title: string;
+  category?: string | null;
   deadline: string | null;
   done: boolean | null;
+  urgent?: boolean | null;
   created_at: string;
 }
 
@@ -30,6 +33,8 @@ interface NagAggregate {
   deadlineOverCount: number;
   delayMinutesToday: number;
   pendingMissionTitles: string[];
+  /** 완료된 미션은 제외한 미완료 미션 상세 — 쓴소리에서 미션 이름을 콕 집어 지적하는 데 쓴다 */
+  pendingMissions: NagPendingMission[];
   focusMinutesToday: number;
   focusMinutesWeek: number;
   currentStreak: number;
@@ -70,6 +75,7 @@ function toPromptContext(aggregate: NagAggregate, personaId: NagPersonaId, inten
     totalCount: aggregate.totalCount,
     delayMinutesToday: aggregate.delayMinutesToday,
     pendingMissionTitles: aggregate.pendingMissionTitles,
+    pendingMissions: aggregate.pendingMissions,
     deadlineOverCount: aggregate.deadlineOverCount,
     focusMinutesToday: aggregate.focusMinutesToday,
     focusMinutesWeek: aggregate.focusMinutesWeek,
@@ -158,6 +164,12 @@ async function collectNagAggregate(
       deadlineOverCount,
       delayMinutesToday,
       pendingMissionTitles: pendingMissions.map((mission) => mission.title),
+      pendingMissions: pendingMissions.map((mission) => ({
+        title: mission.title,
+        topic: mission.category ?? null,
+        deadline: mission.deadline,
+        urgent: mission.urgent ?? false,
+      })),
       focusMinutesToday,
       focusMinutesWeek,
       currentStreak,

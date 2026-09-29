@@ -6,6 +6,7 @@ const PROMPTS_ROOT = path.join(process.cwd(), "prompts");
 
 const personaCache = new Map<NagPersonaId, string>();
 let intensityScaleCache: string | null = null;
+let structureHintsCache: string | null = null;
 
 export function loadPersonaPrompt(personaId: NagPersonaId): string {
   const cached = personaCache.get(personaId);
@@ -23,4 +24,12 @@ export function loadIntensityScaleSource(): string {
   const filePath = path.join(PROMPTS_ROOT, "intensity-scale.md");
   intensityScaleCache = fs.readFileSync(filePath, "utf-8").trim();
   return intensityScaleCache;
+}
+
+export function loadStructureHintsSource(): string {
+  if (structureHintsCache) return structureHintsCache;
+
+  const filePath = path.join(PROMPTS_ROOT, "structure-hints.md");
+  structureHintsCache = fs.readFileSync(filePath, "utf-8").trim();
+  return structureHintsCache;
 }

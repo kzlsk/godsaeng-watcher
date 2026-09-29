@@ -9,6 +9,13 @@ const HISTORY_LIMIT = 5;
 
 declare global {
   var __nagQuoteHistory: Map<string, string[]> | undefined;
+  var __nagVarietyHistory: Map<string, LastVariety> | undefined;
+}
+
+/** 직전 요청에서 쓴 구조 힌트·종결 표현 — 다음 재생성에서 같은 조합이 연속으로 나오지 않게 한다 */
+export interface LastVariety {
+  structureHint?: string;
+  ending?: string;
 }
 
 function getStore(): Map<string, string[]> {
@@ -31,4 +38,19 @@ export function recordQuote(mode: "fail" | "success", personaId: NagPersonaId, q
   const key = keyFor(mode, personaId);
   const list = [quote, ...(store.get(key) ?? [])].slice(0, HISTORY_LIMIT);
   store.set(key, list);
+}
+
+function getVarietyStore(): Map<string, LastVariety> {
+  if (!globalThis.__nagVarietyHistory) {
+    globalThis.__nagVarietyHistory = new Map();
+  }
+  return globalThis.__nagVarietyHistory;
+}
+
+export function getLastVariety(mode: "fail" | "success", personaId: NagPersonaId): LastVariety {
+  return getVarietyStore().get(keyFor(mode, personaId)) ?? {};
+}
+
+export function recordVariety(mode: "fail" | "success", personaId: NagPersonaId, variety: LastVariety): void {
+  getVarietyStore().set(keyFor(mode, personaId), { structureHint: variety.structureHint, ending: variety.ending });
 }

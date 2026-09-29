@@ -1,7 +1,7 @@
 import type { NagPromptContext } from "@/shared/lib/ai/buildNagPrompt";
 import { buildNagPrompt } from "@/shared/lib/ai/buildNagPrompt";
 import { pickFallbackMessage } from "@/shared/lib/ai/fallbackMessages";
-import { getRecentQuotes, recordQuote } from "@/shared/lib/ai/nagHistory";
+import { getLastVariety, getRecentQuotes, recordQuote, recordVariety } from "@/shared/lib/ai/nagHistory";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
@@ -69,7 +69,11 @@ export async function generateNagMessage(context: NagPromptContext): Promise<str
     return fallback;
   }
 
-  const { system, user } = buildNagPrompt(context, { recentQuotes: history });
+  const { system, user, variety } = buildNagPrompt(context, {
+    recentQuotes: history,
+    avoid: getLastVariety(context.mode, context.personaId),
+  });
+  recordVariety(context.mode, context.personaId, variety);
 
   try {
     const text = await requestOpenAI(system, user, apiKey);

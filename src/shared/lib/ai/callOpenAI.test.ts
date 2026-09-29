@@ -160,6 +160,63 @@ describe("generateNagMessage", () => {
     });
   });
 
+  it("완전히 같은 입력으로 5번 재생성해도 OpenAI에 보내는 초점·문장 구조 지시가 매번 같지 않다", async () => {
+    await withEnv("OPENAI_API_KEY", "test-key", async () => {
+      const context = baseContext({ deadlineOverCount: 2, focusMinutesToday: 15, focusMinutesWeek: 120, currentStreak: 3 });
+      const sentPrompts: { system: string; user: string }[] = [];
+      let call = 0;
+
+      await withFetch(
+        (async (_url: string, init: RequestInit) => {
+          const body = JSON.parse(String(init.body)) as { messages: { content: string }[] };
+          sentPrompts.push({ system: body.messages[0].content, user: body.messages[1].content });
+          call += 1;
+          return new Response(JSON.stringify({ choices: [{ message: { content: `응답 ${call}` } }] }), { status: 200 });
+        }) as unknown as typeof fetch,
+        async () => {
+          for (let i = 0; i < 5; i += 1) {
+            await generateNagMessage(context);
+          }
+        },
+      );
+
+      const directions = sentPrompts.map(({ system }) => system.split("## 이번 요청의 방향")[1]?.split("\n## ")[0]);
+      expect(directions.every(Boolean)).toBe(true);
+      // 5번 모두 같은 방향 지시가 나올 확률은 무시할 만큼 작다 (초점 조합 × 구조 힌트 8종).
+      expect(new Set(directions).size).toBeGreaterThanOrEqual(2);
+      expect(new Set(sentPrompts.map(({ user }) => user)).size).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("연속 재생성 시 직전 요청과 같은 문장 구조 힌트를 다시 보내지 않는다", async () => {
+    globalThis.__nagVarietyHistory = new Map();
+
+    await withEnv("OPENAI_API_KEY", "test-key", async () => {
+      const context = baseContext({ deadlineOverCount: 2, focusMinutesToday: 15, currentStreak: 3 });
+      const hints: string[] = [];
+      let call = 0;
+
+      await withFetch(
+        (async (_url: string, init: RequestInit) => {
+          const body = JSON.parse(String(init.body)) as { messages: { content: string }[] };
+          hints.push(body.messages[0].content.match(/- 문장 구조: (.+)/)?.[1] ?? "");
+          call += 1;
+          return new Response(JSON.stringify({ choices: [{ message: { content: `응답 ${call}` } }] }), { status: 200 });
+        }) as unknown as typeof fetch,
+        async () => {
+          for (let i = 0; i < 10; i += 1) {
+            await generateNagMessage(context);
+          }
+        },
+      );
+
+      expect(hints.every(Boolean)).toBe(true);
+      for (let i = 1; i < hints.length; i += 1) {
+        expect(hints[i]).not.toBe(hints[i - 1]);
+      }
+    });
+  });
+
   it("진짜 완전히 똑같은 문구가 연속으로 나오는 경우에만 폴백으로 전환한다", async () => {
     await withEnv("OPENAI_API_KEY", "test-key", async () => {
       const context = baseContext({ personaId: "realist", mode: "fail" });
