@@ -285,4 +285,51 @@ describe("POST /api/nag", () => {
     expect(insertSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ regenerate_count: 2 }));
     expect(insertSpy).toHaveBeenNthCalledWith(3, expect.objectContaining({ regenerate_count: 3 }));
   });
+
+  describe("intensity(강도)", () => {
+    const failMissions: QueryResult = {
+      data: [{ title: "코테 2문제", deadline: null, done: false, created_at: "2026-09-17T01:00:00.000Z" }],
+      error: null,
+    };
+
+    function postWith(body: unknown) {
+      return POST(new Request("http://localhost/api/nag", { method: "POST", body: JSON.stringify(body) }));
+    }
+
+    it("body의 intensity를 프롬프트 입력으로 넘기고 nag_logs context에도 남긴다", async () => {
+      const insertSpy = vi.fn(() => Promise.resolve({ data: null, error: null }));
+      mockSupabase({ missions: failMissions, insertSpy });
+      vi.mocked(generateNagMessage).mockResolvedValue("담백하게 말할게.");
+
+      await postWith({ personaId: "realist", intensity: 15 });
+
+      expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ personaId: "realist", intensity: 15 }));
+      expect(insertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ context: { mode: "fail", personaId: "realist", intensity: 15 } }),
+      );
+    });
+
+    it("범위를 벗어난 intensity는 0~100으로 보정한다", async () => {
+      mockSupabase({ missions: failMissions });
+      vi.mocked(generateNagMessage).mockResolvedValue("문구");
+
+      await postWith({ intensity: 150 });
+      expect(generateNagMessage).toHaveBeenLastCalledWith(expect.objectContaining({ intensity: 100 }));
+
+      mockSupabase({ missions: failMissions });
+      await postWith({ intensity: -20 });
+      expect(generateNagMessage).toHaveBeenLastCalledWith(expect.objectContaining({ intensity: 0 }));
+    });
+
+    it("intensity가 숫자가 아니면 무시하고(undefined → 프롬프트 기본값 50) context에도 남기지 않는다", async () => {
+      const insertSpy = vi.fn(() => Promise.resolve({ data: null, error: null }));
+      mockSupabase({ missions: failMissions, insertSpy });
+      vi.mocked(generateNagMessage).mockResolvedValue("문구");
+
+      await postWith({ personaId: "realist", intensity: "90" });
+
+      expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ intensity: undefined }));
+      expect(insertSpy).toHaveBeenCalledWith(expect.objectContaining({ context: { mode: "fail", personaId: "realist" } }));
+    });
+  });
 });

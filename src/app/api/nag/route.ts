@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/shared/lib/supabase/server";
 import { generateNagMessage } from "@/shared/lib/ai/callOpenAI";
 import type { NagPromptContext } from "@/shared/lib/ai/buildNagPrompt";
+import { clampIntensity } from "@/shared/lib/ai/intensityScale";
 import { NAG_PERSONAS, type NagPersonaId } from "@/shared/config/personas";
 import type { NagMessage } from "@/entities/nag/model/types";
 import { getWeekRange } from "@/entities/focus-session/model/dateRange";
@@ -38,6 +39,7 @@ interface NagAggregate {
 interface StoredNagContext {
   mode?: string;
   personaId?: string;
+  intensity?: number;
 }
 
 interface NagLogRow {
@@ -50,14 +52,20 @@ function isNagPersonaId(value: unknown): value is NagPersonaId {
   return typeof value === "string" && NAG_PERSONAS.some((persona) => persona.id === value);
 }
 
+// body.intensity는 숫자일 때만 받아 0~100으로 보정한다. 그 외(누락/문자열 등)는 undefined → 프롬프트 기본값(50).
+function parseIntensity(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? clampIntensity(value) : undefined;
+}
+
 function isNagMode(value: unknown): value is "fail" | "success" {
   return value === "fail" || value === "success";
 }
 
-function toPromptContext(aggregate: NagAggregate, personaId: NagPersonaId): NagPromptContext {
+function toPromptContext(aggregate: NagAggregate, personaId: NagPersonaId, intensity?: number): NagPromptContext {
   return {
     mode: aggregate.mode,
     personaId,
+    intensity,
     completedCount: aggregate.completedCount,
     totalCount: aggregate.totalCount,
     delayMinutesToday: aggregate.delayMinutesToday,
@@ -176,10 +184,13 @@ async function saveNagLog(
   personaId: NagPersonaId,
   mode: "fail" | "success",
   regenerateCount: number,
+  intensity?: number,
 ) {
+  // 강도를 명시한 요청만 context에 남긴다 (재현용). 생략 시 기존 형태 그대로.
+  const context: StoredNagContext = intensity === undefined ? { mode, personaId } : { mode, personaId, intensity };
   const { error } = await supabase.from("nag_logs").insert({
     content: quote,
-    context: { mode, personaId },
+    context,
     regenerate_count: regenerateCount,
   });
 
@@ -192,6 +203,8 @@ interface ResolveNagMessageOptions {
   forceRegenerate: boolean;
   /** body로 명시된 personaId (POST에서 페르소나 탭을 바꿔 누른 경우) */
   requestedPersonaId?: NagPersonaId;
+  /** body로 명시된 강도(0~100). 영구 저장(nag_settings)은 하지 않고 이번 생성에만 반영한다. */
+  requestedIntensity?: number;
 }
 
 async function resolveNagMessage(
@@ -212,9 +225,9 @@ async function resolveNagMessage(
   }
 
   const personaId = options.requestedPersonaId ?? storedPersonaId ?? NAG_PERSONAS[0].id;
-  const quote = await generateNagMessage(toPromptContext(aggregate, personaId));
+  const quote = await generateNagMessage(toPromptContext(aggregate, personaId, options.requestedIntensity));
   const regenerateCount = options.forceRegenerate ? (latestLog?.regenerate_count ?? 0) + 1 : 0;
-  await saveNagLog(supabase, quote, personaId, aggregate.mode, regenerateCount);
+  await saveNagLog(supabase, quote, personaId, aggregate.mode, regenerateCount, options.requestedIntensity);
 
   return { quote, personaId };
 }
@@ -239,7 +252,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { personaId?: NagPersonaId };
+  const body = (await request.json().catch(() => ({}))) as { personaId?: NagPersonaId; intensity?: unknown };
   const supabase = await createClient();
 
   const aggregateResult = await collectNagAggregate(supabase);
@@ -257,6 +270,7 @@ export async function POST(request: Request) {
   const { quote, personaId } = await resolveNagMessage(supabase, aggregate, logResult.log, {
     forceRegenerate: true,
     requestedPersonaId,
+    requestedIntensity: parseIntensity(body.intensity),
   });
 
   return NextResponse.json(buildNagMessage(quote, personaId, aggregate.mode, aggregate.weeklyScore));
