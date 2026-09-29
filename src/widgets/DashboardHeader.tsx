@@ -43,10 +43,6 @@ export function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="border-2 border-green-light px-3.25 py-2.25 text-[12.5px] font-bold text-green-light">
-          연속 {currentStreak}일
-        </span>
-        <ThemeToggle />
         {/* 닉네임은 잘라내지 않고 전체를 그대로 표시한다. */}
         <span
           className="hidden whitespace-nowrap border-2 border-line px-3.25 py-2.25 text-[12.5px] font-bold text-ink sm:inline-block"
@@ -54,6 +50,10 @@ export function DashboardHeader({
         >
           {nickname}
         </span>
+        <span className="border-2 border-green-light px-3.25 py-2.25 text-[12.5px] font-bold text-green-light">
+          연속 {currentStreak}일
+        </span>
+        <ThemeToggle />
         <button
           type="button"
           onClick={handleLogout}

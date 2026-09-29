@@ -27,75 +27,87 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
   const { topic, todo, deadline, isImportant, isCompleted, actualFocusMinutes, overdueDays } = mission;
   const deadlineText = formatMissionDeadline(deadline);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const isOverdue = Boolean(overdueDays && overdueDays > 0);
+  const showStartFocus = !isCompleted && !isConfirmingDelete;
 
   return (
     <div
       className={cn(
-        "flex items-center gap-3.25 border-b-2 border-border-soft px-5 py-3.5 last:border-b-0",
+        "flex items-center justify-between gap-4 border-b-2 border-border-soft px-5 py-3.5 last:border-b-0",
         !isCompleted && isImportant && "border-l-[5px] border-l-red-shadow bg-red-tint pl-3.75",
       )}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={isCompleted ? "미션 완료 취소" : "미션 완료 처리"}
-        className={cn(
-          "flex size-6 shrink-0 items-center justify-center border-2 text-[11px] font-bold",
-          isCompleted ? "border-green bg-green text-paper-3" : "border-line-strong bg-transparent",
-        )}
-      >
-        {isCompleted ? "✓" : ""}
-      </button>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-0.75">
-        <span
+      {/* 좌측: 상태 표시(체크박스 · 중요/지연)와 할 일 텍스트. 완료 여부는 체크박스로만 표시한다. */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={isCompleted ? "미션 완료 취소" : "미션 완료 처리"}
           className={cn(
-            "truncate text-[14px] font-medium text-ink",
-            isCompleted && "text-ink-soft line-through",
+            "flex size-6 shrink-0 items-center justify-center border-2 text-[11px] font-bold",
+            isCompleted ? "border-green bg-green text-paper-3" : "border-line-strong bg-transparent",
           )}
         >
-          {todo}
-        </span>
-        <span className="truncate text-[12px] font-semibold text-ink-soft">
-          {topic}
-          {deadlineText ? ` · ${deadlineText}` : ""}
-          {actualFocusMinutes ? ` · ${actualFocusMinutes}분` : ""}
-        </span>
+          {isCompleted ? "✓" : ""}
+        </button>
+        {isImportant ? (
+          <Badge variant="danger" className="shrink-0">
+            중요
+          </Badge>
+        ) : null}
+        {isOverdue ? (
+          <Badge variant="solid" className="shrink-0">
+            {overdueDays}일 지연
+          </Badge>
+        ) : null}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.75">
+          <span
+            className={cn(
+              "truncate text-[14px] font-medium text-ink",
+              isCompleted && "text-ink-soft line-through",
+            )}
+          >
+            {todo}
+          </span>
+          <span className="truncate text-[12px] font-semibold text-ink-soft">
+            {topic}
+            {deadlineText ? ` · ${deadlineText}` : ""}
+            {actualFocusMinutes ? ` · ${actualFocusMinutes}분` : ""}
+          </span>
+        </div>
       </div>
 
-      {isImportant ? <Badge variant="danger">중요</Badge> : null}
-      {overdueDays && overdueDays > 0 ? <Badge variant="solid">{overdueDays}일 지연</Badge> : null}
-
-      {isConfirmingDelete ? (
-        <div className="flex shrink-0 items-center gap-1.5">
-          <span className="text-[12px] font-bold text-red-shadow">삭제할까요?</span>
-          <Button variant="solid" size="sm" onClick={onDelete} disabled={isDeleting}>
-            삭제
+      {/* 우측: 실행 버튼. 집중 시작과 삭제 사이는 넓은 간격 + 구분선으로 떼어 오터치를 막는다. */}
+      <div className="flex shrink-0 items-center gap-3">
+        {showStartFocus ? (
+          <Button variant="solid" size="sm" onClick={onStartFocus}>
+            집중 시작
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
-            취소
-          </Button>
-        </div>
-      ) : (
-        <>
-          {isCompleted ? (
-            <Badge variant="success">완료</Badge>
+        ) : null}
+        <div className="flex shrink-0 items-center border-l-2 border-border-soft pl-3">
+          {isConfirmingDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-bold text-red-shadow">삭제할까요?</span>
+              <Button variant="solid" size="sm" onClick={onDelete} disabled={isDeleting}>
+                삭제
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
+                취소
+              </Button>
+            </div>
           ) : (
-            <Button variant="solid" size="sm" onClick={onStartFocus}>
-              집중 시작
-            </Button>
+            <button
+              type="button"
+              onClick={() => setIsConfirmingDelete(true)}
+              aria-label="미션 삭제"
+              title="미션 삭제"
+              className="flex size-7.5 items-center justify-center border-2 border-transparent text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
+            >
+              <TrashIcon />
+            </button>
           )}
-          <button
-            type="button"
-            onClick={() => setIsConfirmingDelete(true)}
-            aria-label="미션 삭제"
-            title="미션 삭제"
-            className="flex size-7.5 shrink-0 items-center justify-center border-2 border-transparent text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
-          >
-            <TrashIcon />
-          </button>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
