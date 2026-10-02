@@ -26,7 +26,7 @@ function makeBuilder(result: QueryResult) {
 function mockSupabase(result: QueryResult) {
   const client = {
     from: () => makeBuilder(result),
-    auth: { getUser: () => Promise.resolve({ data: { user: null }, error: null }) },
+    auth: { getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })) },
   };
   vi.mocked(createClient).mockResolvedValue(client as never);
   return client;
@@ -147,5 +147,31 @@ describe("POST /api/missions", () => {
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body).toMatchObject({ id: "new-1", topic: "코테", todo: "새 미션" });
+  });
+
+  it("인증은 proxy/RLS에 맡기고, 생성 시 Auth 서버(getUser) 왕복을 추가로 만들지 않는다", async () => {
+    const client = mockSupabase({
+      data: {
+        id: "new-1",
+        category: "코테",
+        title: "새 미션",
+        deadline: null,
+        urgent: false,
+        done: false,
+        created_at: "2026-09-18T02:00:00.000Z",
+        focus_sessions: [],
+      },
+      error: null,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/missions", {
+        method: "POST",
+        body: JSON.stringify({ topic: "코테", todo: "새 미션", isImportant: false }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(client.auth.getUser).not.toHaveBeenCalled();
   });
 });

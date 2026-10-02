@@ -20,19 +20,22 @@ async function fetchTodaySession(supabase: SupabaseClient) {
     .order("started_at", { ascending: false });
 }
 
-// endedAt을 명시하지 않으면 "지금" 시점에 세그먼트를 닫는다. 일시정지 중 재개/중지할
-// 때는 호출부가 일시정지 시점을 endedAt으로 넘겨서, 일시정지해 있던 시간이
-// duration_min에 섞여 들어가지 않도록 한다.
-async function closeOpenSession(supabase: SupabaseClient, endedAt: Date) {
-  const { data: openRow, error: openError } = await supabase
+type OpenSessionRow = { id: string; started_at: string };
+
+async function findOpenSession(supabase: SupabaseClient) {
+  return supabase
     .from("focus_sessions")
     .select("id, started_at")
     .is("ended_at", null)
     .order("started_at", { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle<OpenSessionRow>();
+}
 
-  if (openError) return { error: openError };
+// endedAt을 명시하지 않으면 "지금" 시점에 세그먼트를 닫는다. 일시정지 중 재개/중지할
+// 때는 호출부가 일시정지 시점을 endedAt으로 넘겨서, 일시정지해 있던 시간이
+// duration_min에 섞여 들어가지 않도록 한다.
+async function closeSession(supabase: SupabaseClient, openRow: OpenSessionRow | null, endedAt: Date) {
   if (!openRow) return { error: null };
 
   const durationMin = Math.max(0, Math.round((endedAt.getTime() - new Date(openRow.started_at).getTime()) / 60000));
@@ -65,22 +68,37 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const endedAt = body.endedAt ? new Date(body.endedAt) : new Date();
 
+  const { data: openRow, error: openError } = await findOpenSession(supabase);
+  if (openError) {
+    return NextResponse.json({ error: openError.message }, { status: 500 });
+  }
+
   if (body.action === "start" || body.action === "resume") {
-    const { error: closeError } = await closeOpenSession(supabase, endedAt);
-    if (closeError) {
-      return NextResponse.json({ error: closeError.message }, { status: 500 });
+    // 닫을 세그먼트는 위에서 id로 이미 특정했으므로, "기존 세그먼트 마감(update)"과
+    // "새 세그먼트 생성(insert)"은 서로 결과에 의존하지 않는다 → 병렬로 보내 DB 왕복 1회를 줄인다.
+    const [closeResult, insertResult] = await Promise.all([
+      closeSession(supabase, openRow, endedAt),
+      supabase
+        .from("focus_sessions")
+        .insert({ mission_id: body.missionId ?? null, started_at: new Date().toISOString() })
+        .select("id")
+        .single<{ id: string }>(),
+    ]);
+
+    if (closeResult.error) {
+      // 순차 처리하던 때와 같은 결과(마감 실패 시 새 세그먼트 없음)를 유지하기 위해, 이미 만들어진
+      // 새 세그먼트를 되돌린다. 남겨두면 열린 세그먼트가 2개가 되어 누적 시간이 계속 늘어난다.
+      if (insertResult.data) {
+        await supabase.from("focus_sessions").delete().eq("id", insertResult.data.id);
+      }
+      return NextResponse.json({ error: closeResult.error.message }, { status: 500 });
     }
-
-    const { error: insertError } = await supabase
-      .from("focus_sessions")
-      .insert({ mission_id: body.missionId ?? null, started_at: new Date().toISOString() });
-
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    if (insertResult.error) {
+      return NextResponse.json({ error: insertResult.error.message }, { status: 500 });
     }
   } else {
     // stop: 열린 세그먼트를 마감만 하고 새 세그먼트는 만들지 않는다 → idle로 복귀.
-    const { error: closeError } = await closeOpenSession(supabase, endedAt);
+    const { error: closeError } = await closeSession(supabase, openRow, endedAt);
     if (closeError) {
       return NextResponse.json({ error: closeError.message }, { status: 500 });
     }

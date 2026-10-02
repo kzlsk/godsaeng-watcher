@@ -28,6 +28,7 @@ function makeBuilder(result: QueryResult, onCall: (name: string, args: unknown[]
   builder.is = record("is");
   builder.update = record("update");
   builder.insert = record("insert");
+  builder.delete = record("delete");
   builder.maybeSingle = () => Promise.resolve(result);
   builder.single = () => Promise.resolve(result);
   builder.then = (onFulfilled: (value: QueryResult) => unknown, onRejected?: (reason: unknown) => unknown) =>
@@ -224,5 +225,102 @@ describe("POST /api/focus-sessions", () => {
     expect(response.ok).toBe(true);
     expect(calls.some((call) => call.name === "update")).toBe(false);
     expect(calls.some((call) => call.name === "insert")).toBe(true);
+  });
+
+  it("action=start면 기존 세그먼트 마감(update)과 새 세그먼트 생성(insert)을 병렬로 보낸다", async () => {
+    let releaseUpdate: (value: QueryResult) => void = () => {};
+    const pendingUpdate = new Promise<QueryResult>((resolve) => {
+      releaseUpdate = resolve;
+    });
+    let insertCalled = false;
+
+    const queue: QueryResult[] = [
+      { data: { id: "open-1", started_at: "2026-09-17T09:00:00.000Z" }, error: null }, // 열린 세그먼트
+      { data: null, error: null }, // update (pendingUpdate로 대체)
+      { data: { id: "new-1" }, error: null }, // insert
+      { data: [], error: null }, // fetchTodaySession
+    ];
+    let index = 0;
+    const client = {
+      from: () => {
+        const current = index;
+        index += 1;
+        const builder = makeBuilder(queue[current] ?? { data: null, error: null }, (name) => {
+          if (name === "insert") insertCalled = true;
+        });
+        if (current === 1) {
+          builder.then = (onFulfilled: (value: QueryResult) => unknown, onRejected?: (reason: unknown) => unknown) =>
+            pendingUpdate.then(onFulfilled, onRejected);
+        }
+        return builder;
+      },
+    };
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const responsePromise = POST(
+      new Request("http://localhost/api/focus-sessions", {
+        method: "POST",
+        body: JSON.stringify({ missionId: "m1", action: "start" }),
+      }),
+    );
+
+    // update가 아직 끝나지 않았는데도 insert가 이미 나가 있어야 한다 (= 순차가 아니라 병렬).
+    await vi.waitFor(() => expect(insertCalled).toBe(true));
+    releaseUpdate({ data: null, error: null });
+
+    const response = await responsePromise;
+    expect(response.ok).toBe(true);
+  });
+
+  it("병렬 처리 중 기존 세그먼트 마감이 실패하면 새로 만든 세그먼트를 지우고 500을 반환한다", async () => {
+    const calls = mockSupabaseQueue([
+      { data: { id: "open-1", started_at: "2026-09-17T09:00:00.000Z" }, error: null }, // 열린 세그먼트
+      { data: null, error: { message: "update failed" } }, // update 실패
+      { data: { id: "new-1" }, error: null }, // insert 성공
+      { data: null, error: null }, // 보상 delete
+    ]);
+
+    const response = await POST(
+      new Request("http://localhost/api/focus-sessions", {
+        method: "POST",
+        body: JSON.stringify({ missionId: "m1", action: "start" }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(calls.some((call) => call.name === "delete")).toBe(true);
+    expect(calls).toContainEqual({ name: "eq", args: ["id", "new-1"] });
+  });
+
+  it("새 세그먼트 생성이 실패하면 500을 반환하고, 지울 세그먼트가 없으니 delete는 하지 않는다", async () => {
+    const calls = mockSupabaseQueue([
+      { data: { id: "open-1", started_at: "2026-09-17T09:00:00.000Z" }, error: null }, // 열린 세그먼트
+      { data: null, error: null }, // update 성공
+      { data: null, error: { message: "insert failed" } }, // insert 실패
+    ]);
+
+    const response = await POST(
+      new Request("http://localhost/api/focus-sessions", {
+        method: "POST",
+        body: JSON.stringify({ missionId: "m1", action: "start" }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(calls.some((call) => call.name === "delete")).toBe(false);
+  });
+
+  it("열린 세그먼트 조회가 실패하면 쓰기 없이 500을 반환한다", async () => {
+    const calls = mockSupabaseQueue([{ data: null, error: { message: "select failed" } }]);
+
+    const response = await POST(
+      new Request("http://localhost/api/focus-sessions", {
+        method: "POST",
+        body: JSON.stringify({ missionId: "m1", action: "start" }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(calls.some((call) => ["update", "insert", "delete"].includes(call.name))).toBe(false);
   });
 });
