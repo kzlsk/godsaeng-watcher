@@ -27,6 +27,8 @@ interface MissionForNag {
 }
 
 interface NagAggregate {
+  /** 집계 기준 시각의 "앱 기준 오늘"(getAppToday, KST 새벽 2시 경계). 캐시 날짜 비교/저장에 같은 값을 쓴다. */
+  today: string;
   mode: "fail" | "success";
   completedCount: number;
   totalCount: number;
@@ -45,6 +47,8 @@ interface StoredNagContext {
   mode?: string;
   personaId?: string;
   intensity?: number;
+  /** 로그가 생성된 "앱 기준 오늘"(YYYY-MM-DD). 017 이전 레코드에는 없을 수 있다. */
+  date?: string;
 }
 
 interface NagLogRow {
@@ -101,7 +105,8 @@ async function collectNagAggregate(
   supabase: SupabaseClient,
 ): Promise<{ aggregate: NagAggregate } | { error: string }> {
   const now = new Date();
-  const todayRange = getAppDayRange(getAppToday(now));
+  const today = getAppToday(now);
+  const todayRange = getAppDayRange(today);
   const weekRange = getWeekRange(now);
 
   const [missionsResult, todayFocusResult, weekFocusResult, checkinsResult] = await Promise.all([
@@ -158,6 +163,7 @@ async function collectNagAggregate(
 
   return {
     aggregate: {
+      today,
       mode,
       completedCount,
       totalCount,
@@ -195,11 +201,14 @@ async function saveNagLog(
   quote: string,
   personaId: NagPersonaId,
   mode: "fail" | "success",
+  date: string,
   regenerateCount: number,
   intensity?: number,
 ) {
   // 강도를 명시한 요청만 context에 남긴다 (재현용). 생략 시 기존 형태 그대로.
-  const context: StoredNagContext = intensity === undefined ? { mode, personaId } : { mode, personaId, intensity };
+  // date는 다음 GET에서 "오늘 만든 문구인지" 판단하는 캐시 키라 항상 남긴다.
+  const context: StoredNagContext =
+    intensity === undefined ? { mode, personaId, date } : { mode, personaId, intensity, date };
   const { error } = await supabase.from("nag_logs").insert({
     content: quote,
     context,
@@ -227,10 +236,18 @@ async function resolveNagMessage(
 ): Promise<{ quote: string; personaId: NagPersonaId }> {
   const storedPersonaId = isNagPersonaId(latestLog?.context?.personaId) ? latestLog.context.personaId : undefined;
   const storedMode = isNagMode(latestLog?.context?.mode) ? latestLog.context.mode : undefined;
+  // date가 없는 017 이전 레코드는 undefined → 오늘 로그가 아닌 것으로 취급돼 캐시 대상에서 빠진다.
+  const storedDate = typeof latestLog?.context?.date === "string" ? latestLog.context.date : undefined;
 
   // GET(단순 조회)에서만 캐시를 재사용한다 — POST는 사용자가 "한 번 더 때려줘"를 명시적으로
   // 눌러서 온 요청이라, mode가 이전과 같아도 항상 새로 생성해야 한다.
-  const canReuseCache = !options.forceRegenerate && latestLog !== null && storedPersonaId !== undefined && storedMode === aggregate.mode;
+  // 또 "오늘(앱 기준) 만든 문구"일 때만 재사용한다 — 날짜가 바뀌면 mode/persona가 같아도 새로 생성한다.
+  const canReuseCache =
+    !options.forceRegenerate &&
+    latestLog !== null &&
+    storedPersonaId !== undefined &&
+    storedMode === aggregate.mode &&
+    storedDate === aggregate.today;
 
   if (canReuseCache) {
     return { quote: latestLog.content, personaId: storedPersonaId };
@@ -238,8 +255,9 @@ async function resolveNagMessage(
 
   const personaId = options.requestedPersonaId ?? storedPersonaId ?? NAG_PERSONAS[0].id;
   const quote = await generateNagMessage(toPromptContext(aggregate, personaId, options.requestedIntensity));
+  // 날짜가 바뀌어 재생성되는 경우(GET)는 사용자가 누른 재생성이 아니므로 0으로 리셋된다.
   const regenerateCount = options.forceRegenerate ? (latestLog?.regenerate_count ?? 0) + 1 : 0;
-  await saveNagLog(supabase, quote, personaId, aggregate.mode, regenerateCount, options.requestedIntensity);
+  await saveNagLog(supabase, quote, personaId, aggregate.mode, aggregate.today, regenerateCount, options.requestedIntensity);
 
   return { quote, personaId };
 }

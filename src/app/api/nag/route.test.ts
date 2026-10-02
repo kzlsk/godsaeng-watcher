@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 
 vi.mock("@/shared/lib/supabase/server", () => ({
@@ -205,14 +205,20 @@ describe("GET /api/nag", () => {
     );
   });
 
-  it("직전 로그와 mode가 같으면 재생성 없이 기존 문구를 그대로 반환한다", async () => {
+  it("직전 로그와 mode가 같고 오늘 생성된 로그면 재생성 없이 기존 문구를 그대로 반환한다", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-17T03:00:00.000Z")); // KST 09-17 12:00 → 앱 기준 오늘 2026-09-17
     mockSupabase({
       missions: {
         data: [{ title: "코테 2문제", deadline: null, done: false, created_at: "2026-09-17T01:00:00.000Z" }],
         error: null,
       },
       nagLogsSelect: {
-        data: { content: "저장된 이전 문구", context: { mode: "fail", personaId: "realist" }, regenerate_count: 0 },
+        data: {
+          content: "저장된 이전 문구",
+          context: { mode: "fail", personaId: "realist", date: "2026-09-17" },
+          regenerate_count: 0,
+        },
         error: null,
       },
     });
@@ -245,6 +251,143 @@ describe("GET /api/nag", () => {
     expect(body.quote).toBe("오늘은 인정. 내일도 이렇게 와.");
   });
 
+  describe("날짜 경계 캐싱 (017)", () => {
+    // KST 2026-10-02 10:00 → 앱 기준 오늘 "2026-10-02"
+    const TODAY_NOW = new Date("2026-10-02T01:00:00.000Z");
+    const failMissions: QueryResult = {
+      data: [{ title: "코테 2문제", deadline: null, done: false, created_at: "2026-10-01T01:00:00.000Z" }],
+      error: null,
+    };
+
+    it("오늘(date=오늘) 생성된 로그가 있고 mode가 같으면 캐시를 재사용한다", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(TODAY_NOW);
+      const insertSpy = vi.fn(() => Promise.resolve({ data: null, error: null }));
+      mockSupabase({
+        missions: failMissions,
+        nagLogsSelect: {
+          data: {
+            content: "오늘 아침 쓴소리",
+            context: { mode: "fail", personaId: "realist", date: "2026-10-02" },
+            regenerate_count: 0,
+          },
+          error: null,
+        },
+        insertSpy,
+      });
+
+      const body = await (await GET()).json();
+
+      expect(generateNagMessage).not.toHaveBeenCalled();
+      expect(insertSpy).not.toHaveBeenCalled();
+      expect(body.quote).toBe("오늘 아침 쓴소리");
+    });
+
+    it("로그 date가 어제면 mode·persona가 같아도 재생성하고 regenerate_count는 0, date는 오늘로 저장한다", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(TODAY_NOW);
+      const insertSpy = vi.fn(() => Promise.resolve({ data: null, error: null }));
+      mockSupabase({
+        missions: failMissions,
+        nagLogsSelect: {
+          data: {
+            content: "어제 쓴소리",
+            context: { mode: "fail", personaId: "realist", date: "2026-10-01" },
+            regenerate_count: 4,
+          },
+          error: null,
+        },
+        insertSpy,
+      });
+      vi.mocked(generateNagMessage).mockResolvedValue("오늘의 새 쓴소리");
+
+      const body = await (await GET()).json();
+
+      expect(generateNagMessage).toHaveBeenCalledTimes(1);
+      expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ mode: "fail", personaId: "realist" }));
+      expect(body.quote).toBe("오늘의 새 쓴소리");
+      expect(body.activePersonaId).toBe("realist");
+      expect(insertSpy).toHaveBeenCalledWith({
+        content: "오늘의 새 쓴소리",
+        context: { mode: "fail", personaId: "realist", date: "2026-10-02" },
+        regenerate_count: 0,
+      });
+    });
+
+    it("date 필드가 없는 과거 레코드는 오늘 로그가 아닌 것으로 보고 재생성한다", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(TODAY_NOW);
+      mockSupabase({
+        missions: failMissions,
+        nagLogsSelect: {
+          data: { content: "date 없는 옛 문구", context: { mode: "fail", personaId: "furious-boss" }, regenerate_count: 0 },
+          error: null,
+        },
+      });
+      vi.mocked(generateNagMessage).mockResolvedValue("새 문구");
+
+      const body = await (await GET()).json();
+
+      expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ personaId: "furious-boss" }));
+      expect(body.quote).toBe("새 문구");
+    });
+
+    it("앱 하루 경계(KST 새벽 2시)를 기준으로 판단한다 — 01:59까지는 전날 로그 재사용, 02:00부터 재생성", async () => {
+      const yesterdayLog: QueryResult = {
+        data: { content: "10/1 쓴소리", context: { mode: "fail", personaId: "realist", date: "2026-10-01" }, regenerate_count: 0 },
+        error: null,
+      };
+      vi.useFakeTimers();
+
+      // KST 2026-10-02 01:59 → 앱 기준으로는 아직 10/1
+      vi.setSystemTime(new Date("2026-10-01T16:59:00.000Z"));
+      mockSupabase({ missions: failMissions, nagLogsSelect: yesterdayLog });
+      const before = await (await GET()).json();
+      expect(generateNagMessage).not.toHaveBeenCalled();
+      expect(before.quote).toBe("10/1 쓴소리");
+
+      // KST 2026-10-02 02:00 → 앱 기준 10/2
+      vi.setSystemTime(new Date("2026-10-01T17:00:00.000Z"));
+      mockSupabase({ missions: failMissions, nagLogsSelect: yesterdayLog });
+      vi.mocked(generateNagMessage).mockResolvedValue("10/2 쓴소리");
+      const after = await (await GET()).json();
+      expect(generateNagMessage).toHaveBeenCalledTimes(1);
+      expect(after.quote).toBe("10/2 쓴소리");
+    });
+
+    it("같은 날 여러 번 GET하면 처음 한 번만 생성하고 이후엔 저장된 문구를 재사용한다 (회귀 방지)", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(TODAY_NOW);
+      // 전날 로그만 있는 상태에서 시작 → 첫 GET은 재생성, insert 결과를 이어받아 이후 GET은 캐시
+      let storedLog: unknown = {
+        content: "어제 쓴소리",
+        context: { mode: "fail", personaId: "realist", date: "2026-10-01" },
+        regenerate_count: 0,
+      };
+      const insertSpy = vi.fn((payload: unknown) => {
+        storedLog = payload;
+        return Promise.resolve({ data: null, error: null });
+      });
+      const client = {
+        from: (table: string) => {
+          if (table === "missions") return makeBuilder(failMissions);
+          if (table === "nag_logs") return makeBuilder({ data: storedLog, error: null }, insertSpy);
+          return makeBuilder({ data: [], error: null });
+        },
+      };
+      vi.mocked(createClient).mockResolvedValue(client as never);
+      vi.mocked(generateNagMessage).mockResolvedValue("오늘 첫 쓴소리");
+
+      const first = await (await GET()).json();
+      const second = await (await GET()).json();
+      const third = await (await GET()).json();
+
+      expect(generateNagMessage).toHaveBeenCalledTimes(1);
+      expect(insertSpy).toHaveBeenCalledTimes(1);
+      expect([first.quote, second.quote, third.quote]).toEqual(["오늘 첫 쓴소리", "오늘 첫 쓴소리", "오늘 첫 쓴소리"]);
+    });
+  });
+
   it("missions 조회가 실패하면 500과 에러 메시지를 반환하고 AI 하네스를 호출하지 않는다", async () => {
     mockSupabase({ missions: { data: null, error: { message: "boom" } } });
 
@@ -257,6 +400,12 @@ describe("GET /api/nag", () => {
 });
 
 describe("POST /api/nag", () => {
+  // nag_logs context에 저장되는 date(앱 기준 오늘)를 고정하기 위해 시각을 고정한다.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-02T01:00:00.000Z")); // KST 10-02 10:00 → 앱 기준 오늘 2026-10-02
+  });
+
   it("personaId를 지정하면 해당 페르소나로 재생성하고 regenerate_count를 올린다", async () => {
     const insertSpy = vi.fn(() => Promise.resolve({ data: null, error: null }));
     mockSupabase({
@@ -283,7 +432,7 @@ describe("POST /api/nag", () => {
     expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ personaId: "clingy-friend" }));
     expect(body.activePersonaId).toBe("clingy-friend");
     expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ regenerate_count: 3, context: { mode: "fail", personaId: "clingy-friend" } }),
+      expect.objectContaining({ regenerate_count: 3, context: { mode: "fail", personaId: "clingy-friend", date: "2026-10-02" } }),
     );
   });
 
@@ -356,7 +505,7 @@ describe("POST /api/nag", () => {
 
       expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ personaId: "realist", intensity: 15 }));
       expect(insertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ context: { mode: "fail", personaId: "realist", intensity: 15 } }),
+        expect.objectContaining({ context: { mode: "fail", personaId: "realist", intensity: 15, date: "2026-10-02" } }),
       );
     });
 
@@ -380,7 +529,8 @@ describe("POST /api/nag", () => {
       await postWith({ personaId: "realist", intensity: "90" });
 
       expect(generateNagMessage).toHaveBeenCalledWith(expect.objectContaining({ intensity: undefined }));
-      expect(insertSpy).toHaveBeenCalledWith(expect.objectContaining({ context: { mode: "fail", personaId: "realist" } }));
+      expect(insertSpy).toHaveBeenCalledWith(expect.objectContaining({ context: { mode: "fail", personaId: "realist", date: "2026-10-02" } }),
+      );
     });
   });
 });
