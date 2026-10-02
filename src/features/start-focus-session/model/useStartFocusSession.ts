@@ -3,7 +3,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { focusSessionQueryKey } from "@/entities/focus-session/model/useFocusSession";
 import { pausedMarkerQueryKey, type PausedMarker } from "@/entities/focus-session/model/pausedMarker";
+import { weeklyFocusQueryKey } from "@/entities/focus-session/model/useWeeklyFocus";
 import type { FocusSession } from "@/entities/focus-session/model/types";
+import { dailyStatsQueryKey } from "@/entities/checkin/model/useDailyStats";
 import { missionsQueryKey } from "@/entities/mission/model/useMissions";
 
 export type FocusSessionAction = "start" | "resume" | "stop";
@@ -45,10 +47,17 @@ export function useStartFocusSession() {
     onSuccess: (data) => {
       queryClient.setQueryData(focusSessionQueryKey, data);
       queryClient.setQueryData(pausedMarkerQueryKey, null);
-      // stop 시 미션의 actualFocusMinutes(focus_sessions.duration_min 합산)가
-      // 바뀌므로, 미션 목록의 "· N분" 표시도 새로고침 없이 갱신되도록 무효화한다.
+      // 세그먼트가 닫히면서 duration_min이 확정되면 이를 합산하는 쿼리들의 값이
+      // 모두 바뀐다. 새로고침 없이 갱신되도록 함께 무효화한다.
       // start/resume은 실제로는 값이 안 바뀌지만 액션별로 분기할 이유가 없어 동일하게 처리.
+      //
+      // - missions: 미션 목록의 "· N분"(actualFocusMinutes)
+      // - daily stats: 대시보드 상단 "총 집중 시간" 카드
+      //   (/api/checkins가 오늘 범위 duration_min을 합산해 내려준다)
+      // - weekly focus: 주간 총 집중 시간 (/api/focus-sessions/weekly)
       queryClient.invalidateQueries({ queryKey: missionsQueryKey });
+      queryClient.invalidateQueries({ queryKey: dailyStatsQueryKey });
+      queryClient.invalidateQueries({ queryKey: weeklyFocusQueryKey });
     },
   });
 }
