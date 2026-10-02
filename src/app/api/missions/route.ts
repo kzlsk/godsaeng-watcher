@@ -44,14 +44,9 @@ export async function POST(request: Request) {
     );
   }
 
+  // 인증은 proxy의 getClaims()가 요청마다 검증하고, user_id는 DB 기본값(auth.uid())과 RLS가 채우고
+  // 막는다. 여기서 getUser()를 다시 부르면 결과를 쓰지도 않으면서 Auth 서버 왕복만 1회 늘어난다.
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  console.log("SERVER SEES USER:", user, userError);
-
   const { data, error } = await supabase
     .from("missions")
     .insert({
