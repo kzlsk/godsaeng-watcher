@@ -89,11 +89,16 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
 
   return (
     <Modal open={open} onClose={resetAndClose}>
+      {/*
+        모바일(375px~)에서는 모달 전체 높이가 화면을 넘어가 하단 버튼이 화면 밖으로 잘렸다.
+        그래서 폼 높이를 뷰포트(Modal의 p-4 여백 2rem 제외)로 제한하고, 입력 영역만 스크롤시키고
+        제목/버튼은 위아래에 고정해 버튼이 항상 보이게 한다.
+      */}
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col border-[3px] border-line bg-paper-2 shadow-brut-red"
+        className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-[3px] border-line bg-paper-2 shadow-brut-red"
       >
-        <div className="flex w-full items-center justify-between border-b-2 border-line px-5.5 py-4">
+        <div className="flex w-full shrink-0 items-center justify-between border-b-2 border-line px-5.5 py-4">
           <span className="font-display text-[21px] text-ink">미션 추가</span>
           <button
             type="button"
@@ -105,7 +110,7 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
           </button>
         </div>
 
-        <div className="flex w-full flex-col gap-5 p-5.5">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-5 overflow-y-auto p-5.5">
           <Field label="TOPIC">
             <TextInput
               value={topic}
@@ -171,15 +176,15 @@ export function AddMissionModal({ open, onClose }: AddMissionModalProps) {
               {isImportant ? "✓" : ""}
             </button>
           </div>
+        </div>
 
-          <div className="flex w-full gap-2.5 pt-0.5">
-            <Button type="button" variant="outline" size="lg" onClick={resetAndClose}>
-              취소
-            </Button>
-            <Button type="submit" variant="solid" size="lg" className="flex-1" disabled={addMission.isPending}>
-              미션 추가
-            </Button>
-          </div>
+        <div className="flex w-full shrink-0 gap-2.5 border-t-2 border-line p-4 sm:px-5.5 sm:py-4.5">
+          <Button type="button" variant="outline" size="lg" onClick={resetAndClose}>
+            취소
+          </Button>
+          <Button type="submit" variant="solid" size="lg" className="flex-1" disabled={addMission.isPending}>
+            미션 추가
+          </Button>
         </div>
       </form>
     </Modal>

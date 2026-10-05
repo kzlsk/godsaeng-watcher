@@ -33,12 +33,12 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b-2 border-border-soft px-5 py-3.5 last:border-b-0",
+        "flex flex-col gap-2.5 border-b-2 border-border-soft px-5 py-3.5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
         !isCompleted && isImportant && "border-l-[5px] border-l-red-shadow bg-red-tint pl-3.75",
       )}
     >
       {/* 좌측: 상태 표시(체크박스 · 중요/지연)와 할 일 텍스트. 완료 여부는 체크박스로만 표시한다. */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
         <button
           type="button"
           onClick={onToggle}
@@ -60,16 +60,22 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
             {overdueDays}일 지연
           </Badge>
         ) : null}
+        {/*
+          모바일(sm 미만)에서는 좁은 폭 때문에 제목이 한 줄 말줄임(...)으로 잘려 내용을 알 수 없었다.
+          그래서 줄바꿈해서 전부 보여준다. wrap-anywhere는 공백 없는 긴 문자열(URL 등)도 칸을 넘지
+          않게 하기 위한 것이고, 한글은 기본 줄바꿈 규칙으로 알아서 접힌다.
+          sm 이상은 폭이 넉넉하고 기존 디자인을 유지해야 해서 그대로 한 줄 말줄임이다.
+        */}
         <div className="flex min-w-0 flex-1 flex-col gap-0.75">
           <span
             className={cn(
-              "truncate text-[14px] font-medium text-ink",
+              "wrap-anywhere text-[14px] font-medium text-ink sm:truncate",
               isCompleted && "text-ink-soft line-through",
             )}
           >
             {todo}
           </span>
-          <span className="truncate text-[12px] font-semibold text-ink-soft">
+          <span className="wrap-anywhere text-[12px] font-semibold text-ink-soft sm:truncate">
             {topic}
             {deadlineText ? ` · ${deadlineText}` : ""}
             {actualFocusMinutes ? ` · ${actualFocusMinutes}분` : ""}
@@ -78,7 +84,7 @@ export function MissionItem({ mission, onToggle, onStartFocus, onDelete, isDelet
       </div>
 
       {/* 우측: 실행 버튼. 집중 시작과 삭제 사이는 넓은 간격 + 구분선으로 떼어 오터치를 막는다. */}
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
         {showStartFocus ? (
           <Button variant="solid" size="sm" onClick={onStartFocus}>
             집중 시작

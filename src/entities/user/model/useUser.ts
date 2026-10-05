@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/shared/lib/supabase/client";
+import { resolveAuthProvider } from "@/entities/user/model/resolveAuthProvider";
 import type { AppUser } from "@/entities/user/model/types";
 
-function toAppUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null): AppUser | null {
+function toAppUser(
+  user:
+    | {
+        id: string;
+        email?: string | null;
+        user_metadata?: Record<string, unknown>;
+        app_metadata?: { provider?: unknown } | null;
+        identities?: ReadonlyArray<{ provider?: unknown }> | null;
+      }
+    | null,
+): AppUser | null {
   if (!user) return null;
   const nickname =
     (user.user_metadata?.nickname as string | undefined) ??
@@ -13,7 +24,12 @@ function toAppUser(user: { id: string; email?: string | null; user_metadata?: Re
     user.email?.split("@")[0] ??
     "게스트";
 
-  return { id: user.id, nickname, email: user.email ?? null };
+  return {
+    id: user.id,
+    nickname,
+    email: user.email ?? null,
+    provider: resolveAuthProvider(user),
+  };
 }
 
 export function useUser() {
