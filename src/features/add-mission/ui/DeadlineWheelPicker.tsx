@@ -63,13 +63,18 @@ function WheelColumn({ values, value, onChange, ariaLabel }: WheelColumnProps) {
 
   const selectedIndex = Math.max(values.indexOf(value), 0);
 
+  /*
+   * scrollbar-none(scrollbar-width:none)만으로는 사파리/구형 웹킷에서 스크롤바가 남아
+   * 컬럼 폭을 먹으므로 ::-webkit-scrollbar 숨김을 함께 둔다.
+   * overscroll-contain: 모바일에서 휠을 끝까지 돌렸을 때 모달 본문이 따라 스크롤되지 않게 한다.
+   */
   return (
     <div
       ref={containerRef}
       role="listbox"
       aria-label={ariaLabel}
       onScroll={handleScroll}
-      className="h-55 w-full snap-y snap-mandatory overflow-y-scroll scroll-smooth scrollbar-none"
+      className="h-55 min-w-0 flex-1 snap-y snap-mandatory overflow-y-scroll overscroll-contain scroll-smooth scrollbar-none [&::-webkit-scrollbar]:hidden"
       style={{ paddingBlock: ITEM_HEIGHT * ((VISIBLE_ROWS - 1) / 2) }}
     >
       {values.map((item, index) => (

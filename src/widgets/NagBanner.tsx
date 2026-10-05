@@ -41,11 +41,11 @@ export function NagBanner({ onPlanTomorrow }: { onPlanTomorrow: () => void }) {
   return (
     <div
       className={cn(
-        "flex w-full flex-col gap-6 border-[3px] p-5 sm:p-6",
+        "flex w-full flex-col gap-4 border-[3px] p-4 sm:gap-6 sm:p-6",
         isSuccess ? "border-green-dark bg-green" : "border-red-shadow bg-red",
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-paper-3/30 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-paper-3/30 pb-3 sm:gap-3 sm:pb-4">
         <span className="text-[12px] font-bold tracking-[0.72px] text-paper-3">
           {isSuccess ? "AI 칭찬 · 오늘 전부 완료" : "AI 쓴소리"}
         </span>
@@ -61,18 +61,24 @@ export function NagBanner({ onPlanTomorrow }: { onPlanTomorrow: () => void }) {
         <NagIntensitySlider value={intensity} onChange={setIntensity} />
       ) : null}
 
-      <div className="flex flex-col items-start justify-between gap-4.5 sm:flex-row sm:items-end">
-        <p className="font-display text-[22px] leading-[1.35] text-paper-3 sm:text-[28px]">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end sm:gap-4.5">
+        <p className="font-display text-[19px] leading-[1.35] text-paper-3 sm:text-[28px]">
           &ldquo;{nag.quote}&rdquo;
         </p>
         {isSuccess ? (
-          <Button variant="cream" size="lg" onClick={onPlanTomorrow}>
+          <Button
+            variant="cream"
+            size="sm"
+            className="self-end min-h-9 sm:min-h-0 sm:self-auto sm:px-4.25 sm:py-4.5 sm:text-[14.5px]"
+            onClick={onPlanTomorrow}
+          >
             내일 미션 미리 짜기
           </Button>
         ) : (
           <Button
             variant="cream"
-            size="lg"
+            size="sm"
+            className="self-end min-h-9 sm:min-h-0 sm:self-auto sm:px-4.25 sm:py-4.5 sm:text-[14.5px]"
             onClick={() => regenerate.mutate({ personaId: activePersonaId, intensity })}
             disabled={regenerate.isPending}
           >

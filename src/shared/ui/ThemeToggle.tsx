@@ -28,12 +28,12 @@ export function ThemeToggle({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn("inline-flex items-start border-2 border-line-strong p-0.5", className)}>
+    <div className={cn("inline-flex min-h-9 items-stretch border-2 border-line-strong p-0.5", className)}>
       <button
         type="button"
         onClick={() => select("light")}
         className={cn(
-          "px-2.5 py-1.75 text-[11px] font-bold",
+          "flex items-center px-2.5 text-[11px] font-bold",
           theme === "light" ? "bg-ink text-paper-3" : "text-ink-soft",
         )}
       >
@@ -43,7 +43,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         type="button"
         onClick={() => select("dark")}
         className={cn(
-          "px-2.5 py-1.75 text-[11px] font-bold",
+          "flex items-center px-2.5 text-[11px] font-bold",
           theme === "dark" ? "bg-ink text-paper-3" : "text-ink-soft",
         )}
       >
